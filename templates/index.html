@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Personal Knowledge Base</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 16px;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 0;
+        }
+
+        .sidebar {
+            background: #f8f9fa;
+            padding: 30px;
+            border-right: 1px solid #e0e0e0;
+        }
+
+        .upload-section {
+            margin-bottom: 30px;
+        }
+
+        .upload-section h3 {
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+            width: 100%;
+        }
+
+        .file-input-wrapper input[type=file] {
+            position: absolute;
+            left: -9999px;
+        }
+
+        .file-input-label {
+            display: block;
+            padding: 12px 20px;
+            background: #667eea;
+            color: white;
+            text-align: center;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .file-input-label:hover {
+            background: #5568d3;
+        }
+
+        .upload-btn {
+            width: 100%;
+            padding: 12px;
+            background: #764ba2;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-top: 10px;
+            font-size: 16px;
+            transition: background 0.3s;
+        }
+
+        .upload-btn:hover {
+            background: #663a8f;
+        }
+
+        .upload-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .selected-file {
+            margin-top: 10px;
+            padding: 8px;
+            background: white;
+            border-radius: 4px;
+            font-size: 14px;
+            color: #666;
+            word-break: break-all;
+        }
+
+        .documents-section h3 {
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .document-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .document-item {
+            background: white;
+            padding: 12px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+        }
+
+        .document-item .doc-name {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .document-item .doc-info {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .document-item .delete-btn {
+            margin-top: 8px;
+            padding: 6px 12px;
+            background: #ff4444;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .document-item .delete-btn:hover {
+            background: #cc0000;
+        }
+
+        .chat-section {
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            height: 700px;
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            margin-bottom: 20px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 12px;
+        }
+
+        .message {
+            margin-bottom: 20px;
+            animation: fadeIn 0.3s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .message.user {
+            text-align: right;
+        }
+
+        .message-content {
+            display: inline-block;
+            max-width: 70%;
+            padding: 15px 20px;
+            border-radius: 12px;
+            word-wrap: break-word;
+        }
+
+        .message.user .message-content {
+            background: #667eea;
+            color: white;
+        }
+
+        .message.assistant .message-content {
+            background: white;
+            color: #333;
+            border: 1px solid #e0e0e0;
+        }
+
+        .sources {
+            margin-top: 15px;
+            padding: 10px;
+            background: #f0f0f0;
+            border-radius: 8px;
+            font-size: 12px;
+        }
+
+        .sources-title {
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #666;
+        }
+
+        .source-item {
+            margin-bottom: 8px;
+            padding: 8px;
+            background: white;
+            border-radius: 4px;
+        }
+
+        .source-doc {
+            font-weight: 600;
+            color: #667eea;
+        }
+
+        .chat-input-container {
+            display: flex;
+            gap: 10px;
+        }
+
+        .chat-input {
+            flex: 1;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            font-size: 16px;
+            resize: none;
+            font-family: inherit;
+        }
+
+        .chat-input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .send-btn {
+            padding: 15px 30px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background 0.3s;
+        }
+
+        .send-btn:hover {
+            background: #5568d3;
+        }
+
+        .send-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .reset-btn {
+            width: 100%;
+            padding: 10px;
+            background: #ff4444;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-top: 20px;
+            font-size: 14px;
+        }
+
+        .reset-btn:hover {
+            background: #cc0000;
+        }
+
+        .new-conversation-btn {
+            padding: 10px 20px;
+            background: #28a745;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+
+        .new-conversation-btn:hover {
+            background: #218838;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #999;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #667eea;
+        }
+
+        .error {
+            background: #ff4444;
+            color: white;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+
+        .success {
+            background: #44ff44;
+            color: #333;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🧠 Personal Knowledge Base</h1>
+            <p>Upload your documents and have intelligent conversations with your knowledge</p>
+        </div>
+
+        <div class="main-content">
+            <div class="sidebar">
+                <div class="upload-section">
+                    <h3>📄 Upload Documents</h3>
+                    <div class="file-input-wrapper">
+                        <input type="file" id="fileInput" accept=".txt,.md">
+                        <label for="fileInput" class="file-input-label">Choose File</label>
+                    </div>
+                    <div id="selectedFileName" class="selected-file" style="display: none;"></div>
+                    <button id="uploadBtn" class="upload-btn" disabled>Upload</button>
+                    <div id="uploadStatus"></div>
+                </div>
+
+                <div class="documents-section">
+                    <h3>📚 My Documents</h3>
+                    <div id="documentList" class="document-list">
+                        <div class="empty-state">No documents yet</div>
+                    </div>
+                    <button id="resetBtn" class="reset-btn">Reset All</button>
+                </div>
+            </div>
+
+            <div class="chat-section">
+                <div style="margin-bottom: 15px;">
+                    <button id="newConversationBtn" class="new-conversation-btn">🔄 New Conversation</button>
+                </div>
+                <div id="chatMessages" class="chat-messages">
+                    <div class="empty-state">
+                        <h3>👋 Welcome!</h3>
+                        <p>Upload some documents and start asking questions</p>
+                    </div>
+                </div>
+
+                <div class="chat-input-container">
+                    <textarea 
+                        id="chatInput" 
+                        class="chat-input" 
+                        placeholder="Ask anything about your documents..."
+                        rows="3"
+                    ></textarea>
+                    <button id="sendBtn" class="send-btn">Send</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let conversationId = null;
+        let selectedFile = null;
+
+        // File selection
+        document.getElementById('fileInput').addEventListener('change', (e) => {
+            selectedFile = e.target.files[0];
+            if (selectedFile) {
+                document.getElementById('selectedFileName').textContent = selectedFile.name;
+                document.getElementById('selectedFileName').style.display = 'block';
+                document.getElementById('uploadBtn').disabled = false;
+            }
+        });
+
+        // Upload document
+        document.getElementById('uploadBtn').addEventListener('click', async () => {
+            if (!selectedFile) return;
+
+            const formData = new FormData();
+            formData.append('file', selectedFile);
+
+            const uploadBtn = document.getElementById('uploadBtn');
+            const uploadStatus = document.getElementById('uploadStatus');
+            
+            uploadBtn.disabled = true;
+            uploadStatus.innerHTML = '<div class="loading">Uploading...</div>';
+
+            try {
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    uploadStatus.innerHTML = `<div class="success">${data.message}<br>Chunks: ${data.num_chunks}</div>`;
+                    document.getElementById('fileInput').value = '';
+                    document.getElementById('selectedFileName').style.display = 'none';
+                    selectedFile = null;
+                    loadDocuments();
+                    setTimeout(() => uploadStatus.innerHTML = '', 3000);
+                } else {
+                    uploadStatus.innerHTML = `<div class="error">${data.detail}</div>`;
+                }
+            } catch (error) {
+                uploadStatus.innerHTML = `<div class="error">Upload failed: ${error.message}</div>`;
+            } finally {
+                uploadBtn.disabled = true;
+            }
+        });
+
+        // Load documents
+        async function loadDocuments() {
+            try {
+                const response = await fetch('/documents');
+                const data = await response.json();
+
+                const documentList = document.getElementById('documentList');
+                
+                if (data.documents.length === 0) {
+                    documentList.innerHTML = '<div class="empty-state">No documents yet</div>';
+                    return;
+                }
+
+                documentList.innerHTML = data.documents.map(doc => `
+                    <div class="document-item">
+                        <div class="doc-name">${doc.doc_name}</div>
+                        <div class="doc-info">${doc.num_chunks} chunks</div>
+                        <button class="delete-btn" onclick="deleteDocument('${doc.doc_id}')">Delete</button>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading documents:', error);
+            }
+        }
+
+        // Delete document
+        async function deleteDocument(docId) {
+            if (!confirm('Are you sure you want to delete this document?')) return;
+
+            try {
+                const response = await fetch(`/documents/${docId}`, {
+                    method: 'DELETE'
+                });
+
+                if (response.ok) {
+                    loadDocuments();
+                }
+            } catch (error) {
+                console.error('Error deleting document:', error);
+            }
+        }
+
+        // Send chat message
+        async function sendMessage() {
+            const input = document.getElementById('chatInput');
+            const message = input.value.trim();
+
+            if (!message) return;
+
+            const chatMessages = document.getElementById('chatMessages');
+            const sendBtn = document.getElementById('sendBtn');
+
+            // Clear empty state if present
+            if (chatMessages.querySelector('.empty-state')) {
+                chatMessages.innerHTML = '';
+            }
+
+            // Add user message
+            chatMessages.innerHTML += `
+                <div class="message user">
+                    <div class="message-content">${escapeHtml(message)}</div>
+                </div>
+            `;
+
+            input.value = '';
+            sendBtn.disabled = true;
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+
+            try {
+                const response = await fetch('/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        message: message,
+                        conversation_id: conversationId
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    conversationId = data.conversation_id;
+
+                    const rewrittenQueryHtml = data.rewritten_query && data.rewritten_query !== message ? `
+                        <div style="background: #e3f2fd; padding: 8px; border-radius: 4px; margin-bottom: 10px; font-size: 12px;">
+                            <strong>🔍 Searched for:</strong> ${escapeHtml(data.rewritten_query)}
+                        </div>
+                    ` : '';
+
+                    const sourcesHtml = data.sources.length > 0 ? `
+                        <div class="sources">
+                            <div class="sources-title">📚 Sources:</div>
+                            ${data.sources.map(source => `
+                                <div class="source-item">
+                                    <span class="source-doc">${source.document}</span> (chunk ${source.chunk_id})
+                                    <br>
+                                    <span style="color: #666;">${source.text_preview}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    ` : '';
+
+                    chatMessages.innerHTML += `
+                        <div class="message assistant">
+                            <div class="message-content">
+                                ${rewrittenQueryHtml}
+                                ${escapeHtml(data.answer)}
+                                ${sourcesHtml}
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    chatMessages.innerHTML += `
+                        <div class="message assistant">
+                            <div class="message-content">
+                                <div class="error">Error: ${data.detail}</div>
+                            </div>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                chatMessages.innerHTML += `
+                    <div class="message assistant">
+                        <div class="message-content">
+                            <div class="error">Error: ${error.message}</div>
+                        </div>
+                    </div>
+                `;
+            } finally {
+                sendBtn.disabled = false;
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }
+        }
+
+        // Send message on button click
+        document.getElementById('sendBtn').addEventListener('click', sendMessage);
+
+        // Send message on Enter (Shift+Enter for new line)
+        document.getElementById('chatInput').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+
+        // Reset knowledge base
+        document.getElementById('resetBtn').addEventListener('click', async () => {
+            if (!confirm('Are you sure you want to reset the entire knowledge base? This will delete all documents and conversations.')) {
+                return;
+            }
+
+            try {
+                const response = await fetch('/reset', {
+                    method: 'POST'
+                });
+
+                if (response.ok) {
+                    conversationId = null;
+                    document.getElementById('chatMessages').innerHTML = `
+                        <div class="empty-state">
+                            <h3>👋 Welcome!</h3>
+                            <p>Upload some documents and start asking questions</p>
+                        </div>
+                    `;
+                    loadDocuments();
+                }
+            } catch (error) {
+                console.error('Error resetting knowledge base:', error);
+            }
+        });
+
+        // Utility function to escape HTML
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // New conversation button
+        document.getElementById('newConversationBtn').addEventListener('click', () => {
+            if (confirm('Start a new conversation? This will clear the chat history.')) {
+                conversationId = null;
+                document.getElementById('chatMessages').innerHTML = `
+                    <div class="empty-state">
+                        <h3>🔄 New Conversation Started</h3>
+                        <p>Ask me anything about your documents</p>
+                    </div>
+                `;
+            }
+        });
+
+        // Load documents on page load
+        loadDocuments();
+    </script>
+</body>
+</html>

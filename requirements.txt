@@ -1,0 +1,10 @@
+fastapi
+uvicorn[standard]
+python-multipart
+jinja2
+openai
+faiss-cpu
+numpy
+pydantic
+python-dotenv
+aiofiles
