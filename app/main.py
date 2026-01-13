@@ -32,11 +32,11 @@ async def home(request: Request):
 @app.post("/upload", response_model=UploadResponse)
 async def upload_document(file: UploadFile = File(...)):
     """
-    Upload and process a document (txt or md)
+    Upload and process a document (txt, md, or pdf)
     """
     # Validate file type
-    if not file.filename.endswith(('.txt', '.md')):
-        raise HTTPException(status_code=400, detail="Only .txt and .md files are supported")
+    if not file.filename.endswith(('.txt', '.md', '.pdf')):
+        raise HTTPException(status_code=400, detail="Only .txt, .md, and .pdf files are supported")
     
     try:
         # Generate unique document ID

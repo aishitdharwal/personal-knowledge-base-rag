@@ -1,10 +1,12 @@
 # Personal Knowledge Base with Conversational RAG
 
-An intelligent knowledge assistant that ingests documents (txt/md), performs semantic search, and enables natural conversations with source citations.
+An intelligent knowledge assistant that ingests documents (txt/md/pdf), performs semantic search, and enables natural conversations with source citations.
 
 ## Features
 
-- **Document Ingestion**: Upload txt/md files with automatic processing
+- **Document Ingestion**: Upload txt, md, and pdf files with automatic processing
+- **PDF Text Extraction**: Simple PDF text parsing (no OCR)
+- **Query Rewriting**: Contextual query reformulation for better retrieval
 - **Semantic Search**: FAISS-based vector similarity search
 - **Conversational RAG**: Natural conversations with GPT-4 and conversation memory
 - **Source Citations**: Precise document and chunk-level citations

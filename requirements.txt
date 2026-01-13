@@ -8,3 +8,4 @@ numpy
 pydantic
 python-dotenv
 aiofiles
+PyPDF2
