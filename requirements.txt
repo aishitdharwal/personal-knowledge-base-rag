@@ -12,3 +12,10 @@ PyPDF2
 requests
 sentence-transformers
 torch
+# OCR dependencies
+pdf2image
+pillow
+easyocr
+certifi
+# AWS Textract
+boto3

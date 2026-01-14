@@ -248,10 +248,16 @@ async def test_embedding_provider(provider: str, model: str = None):
     except Exception as e:
         return {"success": False, "message": f"Test failed: {str(e)}"}
 
+@app.get("/config/ocr-status")
+async def get_ocr_status():
+    """Get OCR availability and configuration status"""
+    return document_processor.get_ocr_status()
+
 @app.get("/health")
 async def health_check():
     """Health check endpoint"""
     embedding_settings = vector_store.get_embedding_settings()
+    ocr_status = document_processor.get_ocr_status()
     
     return {
         "status": "healthy",
@@ -259,7 +265,12 @@ async def health_check():
         "total_documents": len(vector_store.get_all_documents()),
         "active_conversations": len(rag_engine.conversations),
         "embedding_provider": embedding_settings.provider if embedding_settings else None,
-        "embedding_locked": vector_store.is_locked()
+        "embedding_locked": vector_store.is_locked(),
+        "ocr_enabled": ocr_status['ocr_enabled'],
+        "ocr_engines": {
+            "tesseract": ocr_status['tesseract_available'],
+            "easyocr": ocr_status['easyocr_available']
+        }
     }
 
 if __name__ == "__main__":

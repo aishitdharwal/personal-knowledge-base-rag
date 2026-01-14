@@ -6,6 +6,11 @@ load_dotenv()
 # OpenAI Configuration
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
+# AWS Configuration
+AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
+AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
+AWS_REGION = os.getenv("AWS_REGION", "us-east-1")
+
 # Default LLM Provider Settings
 DEFAULT_ANSWER_PROVIDER = "openai"  # 'openai' or 'ollama'
 DEFAULT_ANSWER_MODEL = "gpt-4"
@@ -35,6 +40,17 @@ OLLAMA_MODELS = [
 
 # Sentence Transformers Configuration
 SENTENCE_TRANSFORMER_MODEL = "all-MiniLM-L6-v2"  # 384 dimensions
+
+# OCR Configuration
+OCR_ENABLED = True  # Enable OCR for scanned PDFs and images
+OCR_PRIMARY = "textract"  # 'textract' or 'easyocr' - AWS Textract is cloud-based, high quality
+OCR_FALLBACK = None  # No fallback - Textract is reliable enough
+OCR_MIN_TEXT_LENGTH = 100  # Minimum text length before triggering OCR
+OCR_LANGUAGES = ['en']  # Languages for OCR
+
+# AWS Textract Configuration
+TEXTRACT_MAX_PAGES = 100  # Maximum pages to process with Textract (cost control)
+TEXTRACT_TIMEOUT = 300  # Timeout in seconds for Textract API calls
 
 # Chunking Configuration
 CHUNK_SIZE = 1000  # characters
