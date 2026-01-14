@@ -14,7 +14,6 @@ from app.models import (
     EmbeddingSettings
 )
 from app.document_processor import DocumentProcessor
-from app.vector_store import VectorStore
 from app.rag_engine import RAGEngine
 from app.providers.openai_provider import OpenAILLMProvider, OpenAIEmbeddingProvider
 from app.providers.ollama_provider import OllamaLLMProvider
@@ -27,8 +26,18 @@ app = FastAPI(title="Personal Knowledge Base with Multi-Provider Support", versi
 # Setup templates
 templates = Jinja2Templates(directory="templates")
 
-# Initialize components
-vector_store = VectorStore()
+# Initialize components - Use PostgreSQL if enabled, otherwise FAISS
+USE_POSTGRES = os.getenv('USE_POSTGRES', 'false').lower() == 'true'
+
+if USE_POSTGRES:
+    print("Using PostgreSQL with pgvector for vector storage")
+    from app.vector_store_postgres import PostgresVectorStore
+    vector_store = PostgresVectorStore()
+else:
+    print("Using FAISS for vector storage")
+    from app.vector_store import VectorStore
+    vector_store = VectorStore()
+
 document_processor = DocumentProcessor()
 rag_engine = RAGEngine(vector_store)
 
@@ -259,18 +268,22 @@ async def health_check():
     embedding_settings = vector_store.get_embedding_settings()
     ocr_status = document_processor.get_ocr_status()
     
+    # Get document count
+    all_docs = vector_store.get_all_documents()
+    total_docs = len(all_docs)
+    total_chunks = sum(doc['num_chunks'] for doc in all_docs)
+    
     return {
         "status": "healthy",
-        "total_chunks": len(vector_store.chunks),
-        "total_documents": len(vector_store.get_all_documents()),
+        "total_chunks": total_chunks,
+        "total_documents": total_docs,
         "active_conversations": len(rag_engine.conversations),
         "embedding_provider": embedding_settings.provider if embedding_settings else None,
         "embedding_locked": vector_store.is_locked(),
         "ocr_enabled": ocr_status['ocr_enabled'],
-        "ocr_engines": {
-            "tesseract": ocr_status['tesseract_available'],
-            "easyocr": ocr_status['easyocr_available']
-        }
+        "ocr_engine": ocr_status.get('engine'),
+        "textract_available": ocr_status['textract_available'],
+        "vector_store_type": "PostgreSQL" if USE_POSTGRES else "FAISS"
     }
 
 if __name__ == "__main__":

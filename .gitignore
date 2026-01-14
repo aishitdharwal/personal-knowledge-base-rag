@@ -41,3 +41,7 @@ data/
 # OS
 .DS_Store
 Thumbs.db
+
+# Infrastructure
+infrastructure/lambda/ingestion/*/
+lambda-package.zip

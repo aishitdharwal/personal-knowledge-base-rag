@@ -42,11 +42,8 @@ OLLAMA_MODELS = [
 SENTENCE_TRANSFORMER_MODEL = "all-MiniLM-L6-v2"  # 384 dimensions
 
 # OCR Configuration
-OCR_ENABLED = True  # Enable OCR for scanned PDFs and images
-OCR_PRIMARY = "textract"  # 'textract' or 'easyocr' - AWS Textract is cloud-based, high quality
-OCR_FALLBACK = None  # No fallback - Textract is reliable enough
+OCR_ENABLED = True  # Enable OCR for scanned PDFs using AWS Textract
 OCR_MIN_TEXT_LENGTH = 100  # Minimum text length before triggering OCR
-OCR_LANGUAGES = ['en']  # Languages for OCR
 
 # AWS Textract Configuration
 TEXTRACT_MAX_PAGES = 100  # Maximum pages to process with Textract (cost control)

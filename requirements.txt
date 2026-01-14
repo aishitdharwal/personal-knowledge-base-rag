@@ -10,12 +10,17 @@ python-dotenv
 aiofiles
 PyPDF2
 requests
-sentence-transformers
+# PyTorch CPU-only (no CUDA) - required by sentence-transformers
+--extra-index-url https://download.pytorch.org/whl/cpu
 torch
-# OCR dependencies
+# Sentence transformers for embeddings
+sentence-transformers
+# OCR dependencies for Textract image conversion
 pdf2image
 pillow
-easyocr
-certifi
-# AWS Textract
+# AWS SDK
 boto3
+# PostgreSQL and pgvector
+psycopg2-binary
+pgvector
+sqlalchemy

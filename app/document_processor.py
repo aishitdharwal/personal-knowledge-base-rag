@@ -4,10 +4,7 @@ from app.config import (
     CHUNK_SIZE, 
     CHUNK_OVERLAP,
     OCR_ENABLED,
-    OCR_PRIMARY,
-    OCR_FALLBACK,
     OCR_MIN_TEXT_LENGTH,
-    OCR_LANGUAGES,
     AWS_ACCESS_KEY_ID,
     AWS_SECRET_ACCESS_KEY,
     AWS_REGION,
@@ -17,8 +14,6 @@ from app.config import (
 import PyPDF2
 import os
 import re
-import ssl
-import certifi
 
 class DocumentProcessor:
     """Handles document loading and chunking for txt, md, and pdf files with OCR support"""
@@ -28,31 +23,14 @@ class DocumentProcessor:
         self.chunk_overlap = chunk_overlap
         self.ocr_enabled = OCR_ENABLED
         
-        # Fix SSL certificate issues for EasyOCR downloads
-        try:
-            ssl._create_default_https_context = ssl._create_unverified_context
-        except Exception:
-            pass
-        
-        # Lazy load OCR libraries
-        self.easyocr_available = False
+        # Lazy load Textract client
         self.textract_available = False
-        self.easyocr_reader = None
         self.textract_client = None
         
-        self._check_ocr_availability()
+        self._check_textract_availability()
     
-    def _check_ocr_availability(self):
-        """Check which OCR libraries are available"""
-        # Check EasyOCR
-        try:
-            import easyocr
-            self.easyocr_available = True
-            print("[OCR] EasyOCR is available")
-        except Exception:
-            print("[OCR] EasyOCR not available")
-        
-        # Check AWS Textract
+    def _check_textract_availability(self):
+        """Check if AWS Textract is available"""
         try:
             import boto3
             # Check if AWS credentials are configured (either in .env or via aws configure)
@@ -105,7 +83,7 @@ class DocumentProcessor:
         
         Strategy:
         1. Try PyPDF2 text extraction (fast, works for text-based PDFs)
-        2. If minimal text found, use OCR (EasyOCR → Tesseract fallback)
+        2. If minimal text found, use AWS Textract OCR
         
         Args:
             file_path: Path to the PDF file
@@ -126,11 +104,16 @@ class DocumentProcessor:
         # Step 2: Check if OCR is needed
         if self.ocr_enabled and len(text.strip()) < OCR_MIN_TEXT_LENGTH:
             print(f"[OCR] Minimal text found ({len(text.strip())} chars), triggering OCR for {file_path}")
+            
+            if not self.textract_available:
+                print(f"[OCR] AWS Textract not available. Using PyPDF2 text as fallback.")
+                return self._clean_pdf_text(text)
+            
             try:
-                text = self._ocr_pdf(file_path)
-                print(f"[OCR] Successfully extracted {len(text.strip())} characters via OCR")
+                text = self._ocr_with_textract(file_path)
+                print(f"[OCR] Successfully extracted {len(text.strip())} characters via AWS Textract")
             except Exception as e:
-                print(f"[OCR] OCR failed: {str(e)}")
+                print(f"[OCR] Textract failed: {str(e)}")
                 print(f"[OCR] Using PyPDF2 extracted text as fallback")
                 # Fall back to whatever text we extracted
         else:
@@ -163,126 +146,130 @@ class DocumentProcessor:
         
         return text
     
-    def _ocr_pdf(self, file_path: str) -> str:
-        """
-        Perform OCR on PDF with AWS Textract
+    def _ocr_with_textract(self, file_path: str) -> str:
+        """Perform OCR using AWS Textract"""
+        import boto3
         
-        Uses:
-        1. AWS Textract (primary - cloud, highest quality)
-        2. EasyOCR (fallback - local, if enabled)
-        
-        Args:
-            file_path: Path to the PDF file
+        # Initialize Textract client (lazy loading)
+        if self.textract_client is None:
+            print(f"[OCR] Initializing AWS Textract client...")
             
-        Returns:
-            OCR-extracted text
-        """
-        print(f"[OCR] Starting OCR process...")
+            # Use explicit credentials if provided, otherwise use default AWS credentials
+            if AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY:
+                print(f"[OCR] Using credentials from .env (region: {AWS_REGION})")
+                self.textract_client = boto3.client(
+                    'textract',
+                    aws_access_key_id=AWS_ACCESS_KEY_ID,
+                    aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
+                    region_name=AWS_REGION
+                )
+            else:
+                print(f"[OCR] Using AWS CLI credentials (region: {AWS_REGION})")
+                self.textract_client = boto3.client(
+                    'textract',
+                    region_name=AWS_REGION
+                )
+            
+            print(f"[OCR] AWS Textract client initialized")
         
-        # Try primary OCR method
-        if OCR_PRIMARY == 'textract' and self.textract_available:
-            print(f"[OCR] Using AWS Textract (primary engine)...")
-            try:
-                result = self._ocr_with_textract(file_path)
-                print(f"[OCR] AWS Textract completed successfully")
-                return result
-            except Exception as e:
-                print(f"[OCR] AWS Textract failed: {str(e)}")
-                # Try fallback if configured
-                if OCR_FALLBACK == 'easyocr' and self.easyocr_available:
-                    print(f"[OCR] Trying EasyOCR (fallback)...")
-                    images = self._convert_pdf_to_images(file_path)
-                    try:
-                        result = self._ocr_with_easyocr(images)
-                        print(f"[OCR] EasyOCR completed successfully")
-                        return result
-                    except Exception as e2:
-                        print(f"[OCR] EasyOCR also failed: {str(e2)}")
-                        raise Exception(f"Both OCR engines failed. Textract: {str(e)}, EasyOCR: {str(e2)}")
-                else:
-                    # No fallback configured or available
-                    raise
+        # Read PDF file
+        with open(file_path, 'rb') as document:
+            pdf_bytes = document.read()
         
-        elif OCR_PRIMARY == 'easyocr' and self.easyocr_available:
-            print(f"[OCR] Using EasyOCR (primary engine)...")
-            images = self._convert_pdf_to_images(file_path)
-            try:
-                result = self._ocr_with_easyocr(images)
-                print(f"[OCR] EasyOCR completed successfully")
-                return result
-            except Exception as e:
-                print(f"[OCR] EasyOCR failed: {str(e)}")
-                # No fallback for EasyOCR
-                raise
+        # Check file size (Textract limit is 5MB for synchronous)
+        file_size_mb = len(pdf_bytes) / (1024 * 1024)
+        print(f"[OCR] PDF size: {file_size_mb:.2f} MB")
         
-        else:
-            error_msg = f"No OCR engine available. Primary: {OCR_PRIMARY} (available: {self.textract_available if OCR_PRIMARY == 'textract' else self.easyocr_available})"
-            print(f"[OCR] ERROR: {error_msg}")
-            raise Exception(error_msg)
-    
-    def _convert_pdf_to_images(self, file_path: str) -> list:
-        """Convert PDF to images for OCR"""
-        print(f"[OCR] Converting PDF to images...")
-        try:
-            from pdf2image import convert_from_path
-            print(f"[OCR] Converting with DPI=200 (this may take a moment)...")
-            images = convert_from_path(file_path, dpi=200)
-            print(f"[OCR] Converted {len(images)} pages to images")
-            return images
-        except Exception as e:
-            error_msg = f"Failed to convert PDF to images: {str(e)}"
-            print(f"[OCR] ERROR: {error_msg}")
-            raise Exception(error_msg)
-    
-    def _ocr_with_easyocr(self, images: list) -> str:
-        """Perform OCR using EasyOCR"""
-        import numpy as np
-        
-        # Initialize EasyOCR reader (lazy loading)
-        if self.easyocr_reader is None:
-            try:
-                import easyocr
-                print(f"[OCR] Loading EasyOCR model for languages: {OCR_LANGUAGES}")
-                print(f"[OCR] This may take a moment on first run (downloading models)...")
-                
-                # Create reader with CPU (safer, more compatible)
-                self.easyocr_reader = easyocr.Reader(OCR_LANGUAGES, gpu=False, verbose=False)
-                print(f"[OCR] EasyOCR model loaded successfully")
-            except Exception as e:
-                error_msg = f"Failed to load EasyOCR model: {str(e)}"
-                print(f"[OCR] ERROR: {error_msg}")
-                raise Exception(error_msg)
+        if file_size_mb > 5:
+            raise Exception(f"PDF too large ({file_size_mb:.2f}MB). Textract synchronous API supports up to 5MB.")
         
         text = ""
-        total_pages = len(images)
+        
+        # Try direct PDF processing first
+        print(f"[OCR] Calling Textract API...")
+        try:
+            response = self.textract_client.detect_document_text(
+                Document={'Bytes': pdf_bytes}
+            )
+            
+            # Extract text from response
+            page_num = 1
+            for item in response.get('Blocks', []):
+                if item['BlockType'] == 'PAGE':
+                    text += f"\n--- Page {page_num} (OCR: AWS Textract) ---\n"
+                    page_num += 1
+                elif item['BlockType'] == 'LINE':
+                    text += item['Text'] + '\n'
+            
+            print(f"[OCR] Textract extracted {len(text)} characters")
+            
+        except Exception as e:
+            error_msg = str(e)
+            # Check if it's an unsupported format error
+            if 'UnsupportedDocumentException' in error_msg or 'unsupported document format' in error_msg.lower():
+                print(f"[OCR] PDF format not supported by Textract directly, converting to images...")
+                # Convert PDF to images and try again
+                text = self._ocr_pdf_via_images(file_path)
+            else:
+                raise Exception(f"Textract API call failed: {str(e)}")
+        
+        if not text.strip():
+            raise Exception("Textract produced no text output")
+        
+        return text
+    
+    def _ocr_pdf_via_images(self, file_path: str) -> str:
+        """Convert PDF to images and OCR each page with Textract"""
+        from pdf2image import convert_from_path
+        from PIL import Image
+        import io
+        
+        print(f"[OCR] Converting PDF to images...")
+        try:
+            images = convert_from_path(file_path, dpi=200)
+            print(f"[OCR] Converted {len(images)} pages to images")
+        except Exception as e:
+            raise Exception(f"Failed to convert PDF to images: {str(e)}")
+        
+        text = ""
         
         for i, image in enumerate(images):
+            print(f"[OCR] Processing page {i + 1}/{len(images)} with Textract...")
+            
+            # Convert PIL Image to bytes (PNG format)
+            img_byte_arr = io.BytesIO()
+            image.save(img_byte_arr, format='PNG')
+            img_bytes = img_byte_arr.getvalue()
+            
+            # Check image size (max 5MB for Textract)
+            img_size_mb = len(img_bytes) / (1024 * 1024)
+            if img_size_mb > 5:
+                # Reduce quality if too large
+                print(f"[OCR] Image too large ({img_size_mb:.2f}MB), reducing quality...")
+                img_byte_arr = io.BytesIO()
+                image.save(img_byte_arr, format='JPEG', quality=85)
+                img_bytes = img_byte_arr.getvalue()
+            
             try:
-                print(f"[OCR] EasyOCR processing page {i + 1}/{total_pages}...")
+                # Call Textract for this image
+                response = self.textract_client.detect_document_text(
+                    Document={'Bytes': img_bytes}
+                )
                 
-                # Convert PIL Image to numpy array
-                image_array = np.array(image)
+                # Extract text from response
+                text += f"\n--- Page {i + 1} (OCR: AWS Textract) ---\n"
+                for item in response.get('Blocks', []):
+                    if item['BlockType'] == 'LINE':
+                        text += item['Text'] + '\n'
                 
-                # Perform OCR with timeout protection
-                results = self.easyocr_reader.readtext(image_array)
-                
-                # Extract text from results
-                page_text = ' '.join([result[1] for result in results])
-                
-                text += f"\n--- Page {i + 1} (OCR: EasyOCR) ---\n"
-                text += page_text + '\n'
-                
-                print(f"[OCR] EasyOCR page {i + 1}/{total_pages} complete ({len(page_text)} chars)")
+                print(f"[OCR] Page {i + 1} complete")
                 
             except Exception as e:
                 print(f"[OCR] Warning: Page {i + 1} failed: {str(e)}")
-                text += f"\n--- Page {i + 1} (OCR: EasyOCR - Error) ---\n"
-                text += f"[Error processing page: {str(e)}]\n"
-                # Continue with other pages
+                text += f"\n--- Page {i + 1} (OCR: Error) ---\n"
+                text += f"[Error: {str(e)}]\n"
         
-        if not text.strip():
-            raise Exception("EasyOCR produced no text output")
-        
+        print(f"[OCR] Textract extracted {len(text)} characters (via images)")
         return text
     
     def _clean_pdf_text(self, text: str) -> str:
@@ -372,135 +359,6 @@ class DocumentProcessor:
         """Get OCR availability status"""
         return {
             'ocr_enabled': self.ocr_enabled,
-            'easyocr_available': self.easyocr_available,
             'textract_available': self.textract_available,
-            'primary_engine': OCR_PRIMARY if self.ocr_enabled else None,
-            'fallback_engine': OCR_FALLBACK if self.ocr_enabled else None,
-            'languages': OCR_LANGUAGES if self.ocr_enabled else None
+            'engine': 'textract' if self.ocr_enabled else None
         }
-    
-    def _ocr_with_textract(self, file_path: str) -> str:
-        """Perform OCR using AWS Textract"""
-        import boto3
-        
-        # Initialize Textract client (lazy loading)
-        if self.textract_client is None:
-            print(f"[OCR] Initializing AWS Textract client...")
-            
-            # Use explicit credentials if provided, otherwise use default AWS credentials
-            if AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY:
-                print(f"[OCR] Using credentials from .env (region: {AWS_REGION})")
-                self.textract_client = boto3.client(
-                    'textract',
-                    aws_access_key_id=AWS_ACCESS_KEY_ID,
-                    aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
-                    region_name=AWS_REGION
-                )
-            else:
-                print(f"[OCR] Using AWS CLI credentials (region: {AWS_REGION})")
-                self.textract_client = boto3.client(
-                    'textract',
-                    region_name=AWS_REGION
-                )
-            
-            print(f"[OCR] AWS Textract client initialized")
-        
-        # Read PDF file
-        with open(file_path, 'rb') as document:
-            pdf_bytes = document.read()
-        
-        # Check file size (Textract limit is 5MB for synchronous)
-        file_size_mb = len(pdf_bytes) / (1024 * 1024)
-        print(f"[OCR] PDF size: {file_size_mb:.2f} MB")
-        
-        if file_size_mb > 5:
-            raise Exception(f"PDF too large ({file_size_mb:.2f}MB). Textract synchronous API supports up to 5MB.")
-        
-        text = ""
-        
-        # Use synchronous API
-        print(f"[OCR] Calling Textract API (direct PDF)...")
-        try:
-            response = self.textract_client.detect_document_text(
-                Document={'Bytes': pdf_bytes}
-            )
-            
-            # Extract text from response
-            page_num = 1
-            for item in response.get('Blocks', []):
-                if item['BlockType'] == 'PAGE':
-                    text += f"\n--- Page {page_num} (OCR: AWS Textract) ---\n"
-                    page_num += 1
-                elif item['BlockType'] == 'LINE':
-                    text += item['Text'] + '\n'
-            
-            print(f"[OCR] Textract extracted {len(text)} characters")
-            
-        except Exception as e:
-            error_msg = str(e)
-            # Check if it's an unsupported format error
-            if 'UnsupportedDocumentException' in error_msg or 'unsupported document format' in error_msg:
-                print(f"[OCR] PDF format not supported, converting to images first...")
-                # Convert PDF to images and try again
-                text = self._ocr_pdf_via_images(file_path)
-            else:
-                raise Exception(f"Textract API call failed: {error_msg}")
-        
-        if not text.strip():
-            raise Exception("Textract produced no text output")
-        
-        return text
-    
-    def _ocr_pdf_via_images(self, file_path: str) -> str:
-        """Convert PDF to images and OCR each page with Textract"""
-        from pdf2image import convert_from_path
-        from PIL import Image
-        import io
-        
-        print(f"[OCR] Converting PDF to images...")
-        try:
-            images = convert_from_path(file_path, dpi=200)
-            print(f"[OCR] Converted {len(images)} pages to images")
-        except Exception as e:
-            raise Exception(f"Failed to convert PDF to images: {str(e)}")
-        
-        text = ""
-        
-        for i, image in enumerate(images):
-            print(f"[OCR] Processing page {i + 1}/{len(images)} with Textract...")
-            
-            # Convert PIL Image to bytes (PNG format)
-            img_byte_arr = io.BytesIO()
-            image.save(img_byte_arr, format='PNG')
-            img_bytes = img_byte_arr.getvalue()
-            
-            # Check image size (max 5MB for Textract)
-            img_size_mb = len(img_bytes) / (1024 * 1024)
-            if img_size_mb > 5:
-                # Reduce quality if too large
-                print(f"[OCR] Image too large ({img_size_mb:.2f}MB), reducing quality...")
-                img_byte_arr = io.BytesIO()
-                image.save(img_byte_arr, format='JPEG', quality=85)
-                img_bytes = img_byte_arr.getvalue()
-            
-            try:
-                # Call Textract for this image
-                response = self.textract_client.detect_document_text(
-                    Document={'Bytes': img_bytes}
-                )
-                
-                # Extract text from response
-                text += f"\n--- Page {i + 1} (OCR: AWS Textract) ---\n"
-                for item in response.get('Blocks', []):
-                    if item['BlockType'] == 'LINE':
-                        text += item['Text'] + '\n'
-                
-                print(f"[OCR] Page {i + 1} complete")
-                
-            except Exception as e:
-                print(f"[OCR] Warning: Page {i + 1} failed: {str(e)}")
-                text += f"\n--- Page {i + 1} (OCR: Error) ---\n"
-                text += f"[Error: {str(e)}]\n"
-        
-        print(f"[OCR] Textract extracted {len(text)} characters (via images)")
-        return text

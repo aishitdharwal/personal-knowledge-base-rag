@@ -14,11 +14,10 @@ sys.path.insert(0, str(project_root))
 if __name__ == "__main__":
     import uvicorn
     
-    # Run the FastAPI application
+    # Run the FastAPI application (production mode - no reload)
     uvicorn.run(
         "app.main:app",
         host="0.0.0.0",
         port=8000,
-        reload=True,
-        reload_dirs=[str(project_root / "app"), str(project_root / "templates")]
+        reload=False  # Disable reload in production
     )
