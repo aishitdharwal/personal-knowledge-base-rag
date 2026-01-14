@@ -5,9 +5,36 @@ load_dotenv()
 
 # OpenAI Configuration
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-EMBEDDING_MODEL = "text-embedding-3-small"
-LLM_MODEL = "gpt-4"
-QUERY_REWRITE_MODEL = "gpt-3.5-turbo"  # Cheaper model for query rewriting
+
+# Default LLM Provider Settings
+DEFAULT_ANSWER_PROVIDER = "openai"  # 'openai' or 'ollama'
+DEFAULT_ANSWER_MODEL = "gpt-4"
+DEFAULT_REWRITE_PROVIDER = "openai"  # 'openai', 'ollama', or 'disabled'
+DEFAULT_REWRITE_MODEL = "gpt-3.5-turbo"
+DEFAULT_EMBEDDING_PROVIDER = "openai"  # 'openai' or 'sentence-transformers'
+
+# OpenAI Models
+OPENAI_MODELS = {
+    "answer": ["gpt-4", "gpt-4-turbo", "gpt-3.5-turbo"],
+    "rewrite": ["gpt-3.5-turbo", "gpt-4"],
+    "embedding": ["text-embedding-3-small", "text-embedding-3-large"]
+}
+
+# Ollama Configuration
+DEFAULT_OLLAMA_URL = os.getenv("OLLAMA_URL", "http://localhost:11434")
+OLLAMA_MODELS = [
+    "llama3.2",
+    "llama3.2:3b", 
+    "llama3.2:1b",
+    "llama3.1",
+    "mistral",
+    "mixtral",
+    "codellama",
+    "phi3"
+]
+
+# Sentence Transformers Configuration
+SENTENCE_TRANSFORMER_MODEL = "all-MiniLM-L6-v2"  # 384 dimensions
 
 # Chunking Configuration
 CHUNK_SIZE = 1000  # characters
@@ -17,6 +44,7 @@ CHUNK_OVERLAP = 200  # characters
 FAISS_INDEX_PATH = "data/faiss_index"
 METADATA_PATH = "data/metadata.json"
 DOCUMENTS_PATH = "data/documents"
+EMBEDDING_CONFIG_PATH = "data/embedding_config.json"
 
 # RAG Configuration
 TOP_K_RESULTS = 5  # Number of chunks to retrieve

@@ -18,10 +18,19 @@ class DocumentMetadata(BaseModel):
     num_chunks: int
     file_size: int
 
+class LLMSettings(BaseModel):
+    """LLM provider settings for a conversation"""
+    answer_provider: str  # 'openai' or 'ollama'
+    answer_model: str
+    rewrite_provider: str  # 'openai', 'ollama', or 'disabled'
+    rewrite_model: Optional[str] = None
+    ollama_url: Optional[str] = None
+
 class ChatMessage(BaseModel):
     """Chat message from user"""
     message: str
     conversation_id: Optional[str] = None
+    settings: Optional[LLMSettings] = None
 
 class ChatResponse(BaseModel):
     """Response from the RAG system"""
@@ -29,10 +38,38 @@ class ChatResponse(BaseModel):
     sources: List[dict]
     conversation_id: str
     rewritten_query: Optional[str] = None
+    settings: Optional[LLMSettings] = None
 
 class UploadResponse(BaseModel):
     """Response after document upload"""
     doc_id: str
     filename: str
     num_chunks: int
+    message: str
+
+class EmbeddingSettings(BaseModel):
+    """Embedding provider settings"""
+    provider: str  # 'openai' or 'sentence-transformers'
+    model: Optional[str] = None
+    dimension: int
+
+class ConnectionTestRequest(BaseModel):
+    """Request to test provider connection"""
+    provider: str  # 'openai' or 'ollama'
+    model: str
+    ollama_url: Optional[str] = None
+
+class ConnectionTestResponse(BaseModel):
+    """Response from connection test"""
+    success: bool
+    message: str
+
+class OllamaModelsRequest(BaseModel):
+    """Request to list Ollama models"""
+    ollama_url: str
+
+class OllamaModelsResponse(BaseModel):
+    """Response with Ollama models"""
+    success: bool
+    models: List[str]
     message: str

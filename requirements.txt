@@ -9,3 +9,6 @@ pydantic
 python-dotenv
 aiofiles
 PyPDF2
+requests
+sentence-transformers
+torch

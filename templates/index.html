@@ -19,7 +19,7 @@
         }
 
         .container {
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
             background: white;
             border-radius: 20px;
@@ -32,6 +32,7 @@
             color: white;
             padding: 30px;
             text-align: center;
+            position: relative;
         }
 
         .header h1 {
@@ -44,6 +45,19 @@
             font-size: 16px;
         }
 
+        .settings-icon {
+            position: absolute;
+            top: 30px;
+            right: 30px;
+            font-size: 28px;
+            cursor: pointer;
+            transition: transform 0.3s;
+        }
+
+        .settings-icon:hover {
+            transform: rotate(90deg);
+        }
+
         .main-content {
             display: grid;
             grid-template-columns: 300px 1fr;
@@ -54,6 +68,8 @@
             background: #f8f9fa;
             padding: 30px;
             border-right: 1px solid #e0e0e0;
+            max-height: 800px;
+            overflow-y: auto;
         }
 
         .upload-section {
@@ -172,7 +188,36 @@
             padding: 30px;
             display: flex;
             flex-direction: column;
-            height: 700px;
+            height: 800px;
+        }
+
+        .conversation-settings {
+            background: #f0f0f0;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            font-size: 13px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .conversation-settings .settings-info {
+            color: #666;
+        }
+
+        .conversation-settings .change-settings-btn {
+            padding: 6px 12px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .conversation-settings .change-settings-btn:hover {
+            background: #5568d3;
         }
 
         .chat-messages {
@@ -308,6 +353,7 @@
             cursor: pointer;
             font-size: 14px;
             margin-bottom: 10px;
+            margin-right: 10px;
         }
 
         .new-conversation-btn:hover {
@@ -341,11 +387,215 @@
             border-radius: 8px;
             margin-bottom: 10px;
         }
+
+        .warning {
+            background: #ffc107;
+            color: #333;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            animation: fadeIn 0.3s;
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 5% auto;
+            padding: 30px;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+            animation: slideIn 0.3s;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateY(-50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-header h2 {
+            color: #333;
+        }
+
+        .close {
+            font-size: 32px;
+            font-weight: bold;
+            cursor: pointer;
+            color: #999;
+        }
+
+        .close:hover {
+            color: #333;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .form-group select,
+        .form-group input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .form-group select:focus,
+        .form-group input[type="text"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .radio-group {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 15px;
+        }
+
+        .radio-group label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+        }
+
+        .radio-group input[type="radio"] {
+            cursor: pointer;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-right: 10px;
+        }
+
+        .btn-primary:hover {
+            background: #5568d3;
+        }
+
+        .btn-primary:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+
+        .btn-test {
+            background: #28a745;
+            color: white;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-left: 10px;
+        }
+
+        .btn-test:hover {
+            background: #218838;
+        }
+
+        .test-result {
+            margin-top: 10px;
+            padding: 8px;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+
+        .test-result.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .test-result.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .info-box {
+            background: #e3f2fd;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            font-size: 14px;
+            color: #1976d2;
+        }
+
+        .settings-section {
+            border: 1px solid #e0e0e0;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .settings-section h3 {
+            margin-bottom: 15px;
+            color: #333;
+            font-size: 18px;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .inline-flex {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
+            <div class="settings-icon" onclick="openSettingsModal()">⚙️</div>
             <h1>🧠 Personal Knowledge Base</h1>
             <p>Upload your documents (txt, md, pdf) and have intelligent conversations with your knowledge</p>
         </div>
@@ -373,9 +623,17 @@
             </div>
 
             <div class="chat-section">
-                <div style="margin-bottom: 15px;">
+                <div style="margin-bottom: 15px; display: flex; align-items: center;">
                     <button id="newConversationBtn" class="new-conversation-btn">🔄 New Conversation</button>
                 </div>
+                
+                <div id="conversationSettings" class="conversation-settings hidden">
+                    <div class="settings-info">
+                        <strong>Using:</strong> <span id="currentProvider">-</span>
+                    </div>
+                    <button class="change-settings-btn" onclick="openConversationSettingsModal()">Change</button>
+                </div>
+
                 <div id="chatMessages" class="chat-messages">
                     <div class="empty-state">
                         <h3>👋 Welcome!</h3>
@@ -396,24 +654,399 @@
         </div>
     </div>
 
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>⚙️ Settings</h2>
+                <span class="close" onclick="closeSettingsModal()">&times;</span>
+            </div>
+
+            <!-- Embedding Settings -->
+            <div class="settings-section">
+                <h3>📊 Embedding Provider</h3>
+                <div id="embeddingLocked" class="info-box hidden">
+                    🔒 Embedding provider is locked after uploading documents. Reset the knowledge base to change.
+                </div>
+                <div id="embeddingUnlocked">
+                    <div class="form-group">
+                        <label>Provider</label>
+                        <div class="radio-group">
+                            <label>
+                                <input type="radio" name="embeddingProvider" value="openai" checked>
+                                OpenAI
+                            </label>
+                            <label>
+                                <input type="radio" name="embeddingProvider" value="sentence-transformers">
+                                Sentence Transformers (Local)
+                            </label>
+                        </div>
+                    </div>
+                    <div class="form-group" id="embeddingModelGroup">
+                        <label>Model</label>
+                        <select id="embeddingModel">
+                            <option value="text-embedding-3-small">text-embedding-3-small (OpenAI)</option>
+                            <option value="text-embedding-3-large">text-embedding-3-large (OpenAI)</option>
+                            <option value="all-MiniLM-L6-v2">all-MiniLM-L6-v2 (384 dim)</option>
+                        </select>
+                    </div>
+                    <div class="inline-flex">
+                        <button class="btn-primary" onclick="saveEmbeddingProvider()">Set Embedding Provider</button>
+                        <button class="btn-test" onclick="testEmbeddingProvider()">Test Connection</button>
+                    </div>
+                    <div id="embeddingTestResult"></div>
+                </div>
+                <div id="currentEmbeddingInfo" class="info-box hidden">
+                    <strong>Current:</strong> <span id="currentEmbedding">-</span>
+                </div>
+            </div>
+
+            <!-- Default LLM Settings -->
+            <div class="settings-section">
+                <h3>🤖 Default LLM Settings</h3>
+                <p style="font-size: 13px; color: #666; margin-bottom: 15px;">These are defaults for new conversations. Each conversation can override these settings.</p>
+                
+                <div class="form-group">
+                    <label>Answer Provider</label>
+                    <div class="radio-group">
+                        <label>
+                            <input type="radio" name="defaultAnswerProvider" value="openai" checked>
+                            OpenAI
+                        </label>
+                        <label>
+                            <input type="radio" name="defaultAnswerProvider" value="ollama">
+                            Ollama (Self-Hosted)
+                        </label>
+                    </div>
+                </div>
+
+                <div id="defaultAnswerOpenAIGroup" class="form-group">
+                    <label>OpenAI Model</label>
+                    <select id="defaultAnswerOpenAIModel">
+                        <option value="gpt-4" selected>GPT-4</option>
+                        <option value="gpt-4-turbo">GPT-4 Turbo</option>
+                        <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
+                    </select>
+                </div>
+
+                <div id="defaultAnswerOllamaGroup" class="form-group hidden">
+                    <label>Ollama URL</label>
+                    <div class="inline-flex">
+                        <input type="text" id="defaultOllamaURL" value="http://localhost:11434" style="flex: 1;">
+                        <button class="btn-test" onclick="loadOllamaModels('default')">Load Models</button>
+                    </div>
+                    <label style="margin-top: 10px;">Ollama Model</label>
+                    <select id="defaultAnswerOllamaModel">
+                        <option value="llama3.2">llama3.2</option>
+                    </select>
+                </div>
+
+                <button class="btn-test" onclick="testDefaultAnswerProvider()">Test Answer Provider</button>
+                <div id="defaultAnswerTestResult"></div>
+            </div>
+
+            <!-- Query Rewriting Settings -->
+            <div class="settings-section">
+                <h3>🔄 Query Rewriting</h3>
+                <div class="form-group">
+                    <label>Rewrite Provider</label>
+                    <div class="radio-group">
+                        <label>
+                            <input type="radio" name="defaultRewriteProvider" value="openai" checked>
+                            OpenAI
+                        </label>
+                        <label>
+                            <input type="radio" name="defaultRewriteProvider" value="ollama">
+                            Ollama
+                        </label>
+                        <label>
+                            <input type="radio" name="defaultRewriteProvider" value="disabled">
+                            Disabled
+                        </label>
+                    </div>
+                </div>
+
+                <div id="defaultRewriteOpenAIGroup" class="form-group">
+                    <label>OpenAI Model</label>
+                    <select id="defaultRewriteOpenAIModel">
+                        <option value="gpt-3.5-turbo" selected>GPT-3.5 Turbo</option>
+                        <option value="gpt-4">GPT-4</option>
+                    </select>
+                </div>
+
+                <div id="defaultRewriteOllamaGroup" class="form-group hidden">
+                    <label>Ollama Model</label>
+                    <select id="defaultRewriteOllamaModel">
+                        <option value="llama3.2">llama3.2</option>
+                    </select>
+                </div>
+
+                <button class="btn-test" onclick="testDefaultRewriteProvider()">Test Rewrite Provider</button>
+                <div id="defaultRewriteTestResult"></div>
+            </div>
+
+            <div style="margin-top: 30px;">
+                <button class="btn-primary" onclick="saveDefaultSettings()">Save Default Settings</button>
+                <button class="btn-secondary" onclick="closeSettingsModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Conversation Settings Modal -->
+    <div id="conversationSettingsModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>💬 Conversation Settings</h2>
+                <span class="close" onclick="closeConversationSettingsModal()">&times;</span>
+            </div>
+
+            <p style="font-size: 13px; color: #666; margin-bottom: 20px;">These settings apply only to the current conversation.</p>
+
+            <!-- Answer Provider -->
+            <div class="settings-section">
+                <h3>🤖 Answer Generation</h3>
+                <div class="form-group">
+                    <label>Provider</label>
+                    <div class="radio-group">
+                        <label>
+                            <input type="radio" name="convAnswerProvider" value="openai" checked>
+                            OpenAI
+                        </label>
+                        <label>
+                            <input type="radio" name="convAnswerProvider" value="ollama">
+                            Ollama
+                        </label>
+                    </div>
+                </div>
+
+                <div id="convAnswerOpenAIGroup" class="form-group">
+                    <label>OpenAI Model</label>
+                    <select id="convAnswerOpenAIModel">
+                        <option value="gpt-4" selected>GPT-4</option>
+                        <option value="gpt-4-turbo">GPT-4 Turbo</option>
+                        <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
+                    </select>
+                </div>
+
+                <div id="convAnswerOllamaGroup" class="form-group hidden">
+                    <label>Ollama URL</label>
+                    <div class="inline-flex">
+                        <input type="text" id="convOllamaURL" value="http://localhost:11434" style="flex: 1;">
+                        <button class="btn-test" onclick="loadOllamaModels('conv')">Load Models</button>
+                    </div>
+                    <label style="margin-top: 10px;">Ollama Model</label>
+                    <select id="convAnswerOllamaModel">
+                        <option value="llama3.2">llama3.2</option>
+                    </select>
+                </div>
+
+                <button class="btn-test" onclick="testConvAnswerProvider()">Test Provider</button>
+                <div id="convAnswerTestResult"></div>
+            </div>
+
+            <!-- Query Rewriting -->
+            <div class="settings-section">
+                <h3>🔄 Query Rewriting</h3>
+                <div class="form-group">
+                    <label>Provider</label>
+                    <div class="radio-group">
+                        <label>
+                            <input type="radio" name="convRewriteProvider" value="openai" checked>
+                            OpenAI
+                        </label>
+                        <label>
+                            <input type="radio" name="convRewriteProvider" value="ollama">
+                            Ollama
+                        </label>
+                        <label>
+                            <input type="radio" name="convRewriteProvider" value="disabled">
+                            Disabled
+                        </label>
+                    </div>
+                </div>
+
+                <div id="convRewriteOpenAIGroup" class="form-group">
+                    <label>OpenAI Model</label>
+                    <select id="convRewriteOpenAIModel">
+                        <option value="gpt-3.5-turbo" selected>GPT-3.5 Turbo</option>
+                        <option value="gpt-4">GPT-4</option>
+                    </select>
+                </div>
+
+                <div id="convRewriteOllamaGroup" class="form-group hidden">
+                    <label>Ollama Model</label>
+                    <select id="convRewriteOllamaModel">
+                        <option value="llama3.2">llama3.2</option>
+                    </select>
+                </div>
+            </div>
+
+            <div style="margin-top: 30px;">
+                <button class="btn-primary" onclick="applyConversationSettings()">Apply Settings</button>
+                <button class="btn-secondary" onclick="closeConversationSettingsModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Embedding Selection Modal (First Upload) -->
+    <div id="embeddingSelectionModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>📊 Select Embedding Provider</h2>
+            </div>
+
+            <div class="info-box">
+                ⚠️ You must select an embedding provider before uploading documents. This choice cannot be changed without resetting the knowledge base.
+            </div>
+
+            <div class="settings-section">
+                <div class="form-group">
+                    <label>Provider</label>
+                    <div class="radio-group">
+                        <label>
+                            <input type="radio" name="firstEmbeddingProvider" value="openai" checked>
+                            OpenAI (Cloud)
+                        </label>
+                        <label>
+                            <input type="radio" name="firstEmbeddingProvider" value="sentence-transformers">
+                            Sentence Transformers (Local)
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Model</label>
+                    <select id="firstEmbeddingModel">
+                        <option value="text-embedding-3-small">text-embedding-3-small (1536 dim)</option>
+                        <option value="text-embedding-3-large">text-embedding-3-large (3072 dim)</option>
+                        <option value="all-MiniLM-L6-v2">all-MiniLM-L6-v2 (384 dim)</option>
+                    </select>
+                </div>
+
+                <div style="font-size: 13px; color: #666; margin-top: 10px;">
+                    <strong>OpenAI:</strong> Higher quality, requires API key, costs per usage<br>
+                    <strong>Sentence Transformers:</strong> Free, runs locally, good quality
+                </div>
+            </div>
+
+            <div style="margin-top: 30px;">
+                <button class="btn-primary" onclick="confirmEmbeddingSelection()">Confirm & Continue</button>
+            </div>
+        </div>
+    </div>
+
     <script>
+        // Global state
         let conversationId = null;
         let selectedFile = null;
+        let currentSettings = null;
+        let defaultSettings = {
+            answer_provider: 'openai',
+            answer_model: 'gpt-4',
+            rewrite_provider: 'openai',
+            rewrite_model: 'gpt-3.5-turbo',
+            ollama_url: 'http://localhost:11434'
+        };
 
-        // File selection
-        document.getElementById('fileInput').addEventListener('change', (e) => {
+        // Initialize on page load
+        window.onload = function() {
+            checkEmbeddingConfig();
+            loadDocuments();
+            setupEventListeners();
+            loadDefaultSettings();
+        };
+
+        function setupEventListeners() {
+            // File selection
+            document.getElementById('fileInput').addEventListener('change', handleFileSelect);
+            
+            // Upload button
+            document.getElementById('uploadBtn').addEventListener('click', uploadDocument);
+            
+            // Chat
+            document.getElementById('sendBtn').addEventListener('click', sendMessage);
+            document.getElementById('chatInput').addEventListener('keydown', handleChatKeydown);
+            
+            // New conversation
+            document.getElementById('newConversationBtn').addEventListener('click', startNewConversation);
+            
+            // Reset
+            document.getElementById('resetBtn').addEventListener('click', resetKnowledgeBase);
+
+            // Provider radio buttons
+            document.querySelectorAll('input[name="embeddingProvider"]').forEach(radio => {
+                radio.addEventListener('change', handleEmbeddingProviderChange);
+            });
+
+            document.querySelectorAll('input[name="defaultAnswerProvider"]').forEach(radio => {
+                radio.addEventListener('change', handleDefaultAnswerProviderChange);
+            });
+
+            document.querySelectorAll('input[name="defaultRewriteProvider"]').forEach(radio => {
+                radio.addEventListener('change', handleDefaultRewriteProviderChange);
+            });
+
+            document.querySelectorAll('input[name="convAnswerProvider"]').forEach(radio => {
+                radio.addEventListener('change', handleConvAnswerProviderChange);
+            });
+
+            document.querySelectorAll('input[name="convRewriteProvider"]').forEach(radio => {
+                radio.addEventListener('change', handleConvRewriteProviderChange);
+            });
+
+            document.querySelectorAll('input[name="firstEmbeddingProvider"]').forEach(radio => {
+                radio.addEventListener('change', handleFirstEmbeddingProviderChange);
+            });
+        }
+
+        // Check embedding configuration
+        async function checkEmbeddingConfig() {
+            try {
+                const response = await fetch('/config/embedding');
+                const data = await response.json();
+
+                if (data.settings) {
+                    document.getElementById('currentEmbeddingInfo').classList.remove('hidden');
+                    document.getElementById('currentEmbedding').textContent = 
+                        `${data.settings.provider} - ${data.settings.model} (${data.settings.dimension} dim)`;
+                }
+
+                if (data.is_locked) {
+                    document.getElementById('embeddingLocked').classList.remove('hidden');
+                    document.getElementById('embeddingUnlocked').classList.add('hidden');
+                }
+            } catch (error) {
+                console.error('Error checking embedding config:', error);
+            }
+        }
+
+        // File handling
+        function handleFileSelect(e) {
             selectedFile = e.target.files[0];
             if (selectedFile) {
                 document.getElementById('selectedFileName').textContent = selectedFile.name;
                 document.getElementById('selectedFileName').style.display = 'block';
                 document.getElementById('uploadBtn').disabled = false;
             }
-        });
+        }
 
-        // Upload document
-        document.getElementById('uploadBtn').addEventListener('click', async () => {
+        async function uploadDocument() {
             if (!selectedFile) return;
 
+            // Check if embedding provider is set
+            const embeddingCheck = await fetch('/config/embedding');
+            const embeddingData = await embeddingCheck.json();
+
+            if (!embeddingData.settings) {
+                // Show embedding selection modal
+                document.getElementById('embeddingSelectionModal').style.display = 'block';
+                return;
+            }
+
+            await performUpload();
+        }
+
+        async function performUpload() {
             const formData = new FormData();
             formData.append('file', selectedFile);
 
@@ -437,6 +1070,7 @@
                     document.getElementById('selectedFileName').style.display = 'none';
                     selectedFile = null;
                     loadDocuments();
+                    checkEmbeddingConfig(); // Refresh embedding lock status
                     setTimeout(() => uploadStatus.innerHTML = '', 3000);
                 } else {
                     uploadStatus.innerHTML = `<div class="error">${data.detail}</div>`;
@@ -446,9 +1080,9 @@
             } finally {
                 uploadBtn.disabled = true;
             }
-        });
+        }
 
-        // Load documents
+        // Document management
         async function loadDocuments() {
             try {
                 const response = await fetch('/documents');
@@ -463,7 +1097,7 @@
 
                 documentList.innerHTML = data.documents.map(doc => `
                     <div class="document-item">
-                        <div class="doc-name">${doc.doc_name}</div>
+                        <div class="doc-name">${escapeHtml(doc.doc_name)}</div>
                         <div class="doc-info">${doc.num_chunks} chunks</div>
                         <button class="delete-btn" onclick="deleteDocument('${doc.doc_id}')">Delete</button>
                     </div>
@@ -473,7 +1107,6 @@
             }
         }
 
-        // Delete document
         async function deleteDocument(docId) {
             if (!confirm('Are you sure you want to delete this document?')) return;
 
@@ -490,7 +1123,42 @@
             }
         }
 
-        // Send chat message
+        async function resetKnowledgeBase() {
+            if (!confirm('Are you sure you want to reset the entire knowledge base? This will delete all documents, conversations, and unlock the embedding provider.')) {
+                return;
+            }
+
+            try {
+                const response = await fetch('/reset', {
+                    method: 'POST'
+                });
+
+                if (response.ok) {
+                    conversationId = null;
+                    currentSettings = null;
+                    document.getElementById('chatMessages').innerHTML = `
+                        <div class="empty-state">
+                            <h3>👋 Welcome!</h3>
+                            <p>Upload some documents and start asking questions</p>
+                        </div>
+                    `;
+                    document.getElementById('conversationSettings').classList.add('hidden');
+                    loadDocuments();
+                    checkEmbeddingConfig();
+                }
+            } catch (error) {
+                console.error('Error resetting knowledge base:', error);
+            }
+        }
+
+        // Chat functions
+        function handleChatKeydown(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        }
+
         async function sendMessage() {
             const input = document.getElementById('chatInput');
             const message = input.value.trim();
@@ -516,22 +1184,30 @@
             sendBtn.disabled = true;
             chatMessages.scrollTop = chatMessages.scrollHeight;
 
+            // Prepare request
+            const requestBody = {
+                message: message,
+                conversation_id: conversationId,
+                settings: currentSettings
+            };
+
             try {
                 const response = await fetch('/chat', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({
-                        message: message,
-                        conversation_id: conversationId
-                    })
+                    body: JSON.stringify(requestBody)
                 });
 
                 const data = await response.json();
 
                 if (response.ok) {
                     conversationId = data.conversation_id;
+                    currentSettings = data.settings;
+
+                    // Update conversation settings display
+                    updateConversationSettingsDisplay(data.settings);
 
                     const rewrittenQueryHtml = data.rewritten_query && data.rewritten_query !== message ? `
                         <div style="background: #e3f2fd; padding: 8px; border-radius: 4px; margin-bottom: 10px; font-size: 12px;">
@@ -544,9 +1220,9 @@
                             <div class="sources-title">📚 Sources:</div>
                             ${data.sources.map(source => `
                                 <div class="source-item">
-                                    <span class="source-doc">${source.document}</span> (chunk ${source.chunk_id})
+                                    <span class="source-doc">${escapeHtml(source.document)}</span> (chunk ${source.chunk_id})
                                     <br>
-                                    <span style="color: #666;">${source.text_preview}</span>
+                                    <span style="color: #666;">${escapeHtml(source.text_preview)}</span>
                                 </div>
                             `).join('')}
                         </div>
@@ -565,7 +1241,7 @@
                     chatMessages.innerHTML += `
                         <div class="message assistant">
                             <div class="message-content">
-                                <div class="error">Error: ${data.detail}</div>
+                                <div class="error">Error: ${escapeHtml(data.detail)}</div>
                             </div>
                         </div>
                     `;
@@ -574,7 +1250,7 @@
                 chatMessages.innerHTML += `
                     <div class="message assistant">
                         <div class="message-content">
-                            <div class="error">Error: ${error.message}</div>
+                            <div class="error">Error: ${escapeHtml(error.message)}</div>
                         </div>
                     </div>
                 `;
@@ -584,65 +1260,392 @@
             }
         }
 
-        // Send message on button click
-        document.getElementById('sendBtn').addEventListener('click', sendMessage);
-
-        // Send message on Enter (Shift+Enter for new line)
-        document.getElementById('chatInput').addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                sendMessage();
-            }
-        });
-
-        // Reset knowledge base
-        document.getElementById('resetBtn').addEventListener('click', async () => {
-            if (!confirm('Are you sure you want to reset the entire knowledge base? This will delete all documents and conversations.')) {
-                return;
-            }
-
-            try {
-                const response = await fetch('/reset', {
-                    method: 'POST'
-                });
-
-                if (response.ok) {
-                    conversationId = null;
-                    document.getElementById('chatMessages').innerHTML = `
-                        <div class="empty-state">
-                            <h3>👋 Welcome!</h3>
-                            <p>Upload some documents and start asking questions</p>
-                        </div>
-                    `;
-                    loadDocuments();
-                }
-            } catch (error) {
-                console.error('Error resetting knowledge base:', error);
-            }
-        });
-
-        // Utility function to escape HTML
-        function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
-
-        // New conversation button
-        document.getElementById('newConversationBtn').addEventListener('click', () => {
-            if (confirm('Start a new conversation? This will clear the chat history.')) {
+        function startNewConversation() {
+            if (conversationId && confirm('Start a new conversation? This will clear the chat history.')) {
                 conversationId = null;
+                currentSettings = null;
                 document.getElementById('chatMessages').innerHTML = `
                     <div class="empty-state">
                         <h3>🔄 New Conversation Started</h3>
                         <p>Ask me anything about your documents</p>
                     </div>
                 `;
+                document.getElementById('conversationSettings').classList.add('hidden');
+            } else if (!conversationId) {
+                alert('No active conversation to reset.');
             }
-        });
+        }
 
-        // Load documents on page load
-        loadDocuments();
+        function updateConversationSettingsDisplay(settings) {
+            if (!settings) return;
+
+            const providerText = settings.answer_provider === 'openai' 
+                ? `OpenAI (${settings.answer_model})`
+                : `Ollama (${settings.answer_model})`;
+            
+            const rewriteText = settings.rewrite_provider === 'disabled'
+                ? 'Rewrite: Disabled'
+                : `Rewrite: ${settings.rewrite_provider}`;
+
+            document.getElementById('currentProvider').textContent = `${providerText} | ${rewriteText}`;
+            document.getElementById('conversationSettings').classList.remove('hidden');
+        }
+
+        // Modal functions
+        function openSettingsModal() {
+            document.getElementById('settingsModal').style.display = 'block';
+        }
+
+        function closeSettingsModal() {
+            document.getElementById('settingsModal').style.display = 'none';
+        }
+
+        function openConversationSettingsModal() {
+            // Populate with current settings or defaults
+            const settings = currentSettings || defaultSettings;
+            
+            // Set answer provider
+            document.querySelector(`input[name="convAnswerProvider"][value="${settings.answer_provider}"]`).checked = true;
+            handleConvAnswerProviderChange();
+            
+            if (settings.answer_provider === 'openai') {
+                document.getElementById('convAnswerOpenAIModel').value = settings.answer_model;
+            } else {
+                document.getElementById('convOllamaURL').value = settings.ollama_url || 'http://localhost:11434';
+                document.getElementById('convAnswerOllamaModel').value = settings.answer_model;
+            }
+
+            // Set rewrite provider
+            document.querySelector(`input[name="convRewriteProvider"][value="${settings.rewrite_provider}"]`).checked = true;
+            handleConvRewriteProviderChange();
+
+            if (settings.rewrite_provider === 'openai') {
+                document.getElementById('convRewriteOpenAIModel').value = settings.rewrite_model || 'gpt-3.5-turbo';
+            } else if (settings.rewrite_provider === 'ollama') {
+                document.getElementById('convRewriteOllamaModel').value = settings.rewrite_model || 'llama3.2';
+            }
+
+            document.getElementById('conversationSettingsModal').style.display = 'block';
+        }
+
+        function closeConversationSettingsModal() {
+            document.getElementById('conversationSettingsModal').style.display = 'none';
+        }
+
+        function applyConversationSettings() {
+            const answerProvider = document.querySelector('input[name="convAnswerProvider"]:checked').value;
+            const rewriteProvider = document.querySelector('input[name="convRewriteProvider"]:checked').value;
+
+            currentSettings = {
+                answer_provider: answerProvider,
+                answer_model: answerProvider === 'openai' 
+                    ? document.getElementById('convAnswerOpenAIModel').value
+                    : document.getElementById('convAnswerOllamaModel').value,
+                rewrite_provider: rewriteProvider,
+                rewrite_model: rewriteProvider === 'openai'
+                    ? document.getElementById('convRewriteOpenAIModel').value
+                    : (rewriteProvider === 'ollama' ? document.getElementById('convRewriteOllamaModel').value : null),
+                ollama_url: answerProvider === 'ollama' ? document.getElementById('convOllamaURL').value : null
+            };
+
+            updateConversationSettingsDisplay(currentSettings);
+            closeConversationSettingsModal();
+        }
+
+        // Embedding functions
+        function handleEmbeddingProviderChange() {
+            const provider = document.querySelector('input[name="embeddingProvider"]:checked').value;
+            const modelSelect = document.getElementById('embeddingModel');
+            
+            modelSelect.innerHTML = '';
+            if (provider === 'openai') {
+                modelSelect.innerHTML = `
+                    <option value="text-embedding-3-small">text-embedding-3-small (1536 dim)</option>
+                    <option value="text-embedding-3-large">text-embedding-3-large (3072 dim)</option>
+                `;
+            } else {
+                modelSelect.innerHTML = `
+                    <option value="all-MiniLM-L6-v2">all-MiniLM-L6-v2 (384 dim)</option>
+                    <option value="all-mpnet-base-v2">all-mpnet-base-v2 (768 dim)</option>
+                `;
+            }
+        }
+
+        function handleFirstEmbeddingProviderChange() {
+            const provider = document.querySelector('input[name="firstEmbeddingProvider"]:checked').value;
+            const modelSelect = document.getElementById('firstEmbeddingModel');
+            
+            modelSelect.innerHTML = '';
+            if (provider === 'openai') {
+                modelSelect.innerHTML = `
+                    <option value="text-embedding-3-small">text-embedding-3-small (1536 dim)</option>
+                    <option value="text-embedding-3-large">text-embedding-3-large (3072 dim)</option>
+                `;
+            } else {
+                modelSelect.innerHTML = `
+                    <option value="all-MiniLM-L6-v2">all-MiniLM-L6-v2 (384 dim)</option>
+                    <option value="all-mpnet-base-v2">all-mpnet-base-v2 (768 dim)</option>
+                `;
+            }
+        }
+
+        async function saveEmbeddingProvider() {
+            const provider = document.querySelector('input[name="embeddingProvider"]:checked').value;
+            const model = document.getElementById('embeddingModel').value;
+
+            try {
+                const response = await fetch(`/config/embedding?provider=${provider}&model=${model}`, {
+                    method: 'POST'
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    alert('Embedding provider set successfully!');
+                    checkEmbeddingConfig();
+                    closeSettingsModal();
+                } else {
+                    alert(`Error: ${data.detail}`);
+                }
+            } catch (error) {
+                alert(`Error: ${error.message}`);
+            }
+        }
+
+        async function confirmEmbeddingSelection() {
+            const provider = document.querySelector('input[name="firstEmbeddingProvider"]:checked').value;
+            const model = document.getElementById('firstEmbeddingModel').value;
+
+            try {
+                const response = await fetch(`/config/embedding?provider=${provider}&model=${model}`, {
+                    method: 'POST'
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    document.getElementById('embeddingSelectionModal').style.display = 'none';
+                    checkEmbeddingConfig();
+                    // Now proceed with upload
+                    await performUpload();
+                } else {
+                    alert(`Error: ${data.detail}`);
+                }
+            } catch (error) {
+                alert(`Error: ${error.message}`);
+            }
+        }
+
+        async function testEmbeddingProvider() {
+            const provider = document.querySelector('input[name="embeddingProvider"]:checked').value;
+            const model = document.getElementById('embeddingModel').value;
+            const resultDiv = document.getElementById('embeddingTestResult');
+
+            resultDiv.innerHTML = '<div class="loading">Testing...</div>';
+
+            try {
+                const response = await fetch(`/config/test-embedding?provider=${provider}&model=${model}`, {
+                    method: 'POST'
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    resultDiv.innerHTML = `<div class="test-result success">✅ ${data.message}</div>`;
+                } else {
+                    resultDiv.innerHTML = `<div class="test-result error">❌ ${data.message}</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="test-result error">❌ Test failed: ${error.message}</div>`;
+            }
+        }
+
+        // Provider change handlers
+        function handleDefaultAnswerProviderChange() {
+            const provider = document.querySelector('input[name="defaultAnswerProvider"]:checked').value;
+            document.getElementById('defaultAnswerOpenAIGroup').classList.toggle('hidden', provider !== 'openai');
+            document.getElementById('defaultAnswerOllamaGroup').classList.toggle('hidden', provider !== 'ollama');
+        }
+
+        function handleDefaultRewriteProviderChange() {
+            const provider = document.querySelector('input[name="defaultRewriteProvider"]:checked').value;
+            document.getElementById('defaultRewriteOpenAIGroup').classList.toggle('hidden', provider !== 'openai');
+            document.getElementById('defaultRewriteOllamaGroup').classList.toggle('hidden', provider !== 'ollama');
+        }
+
+        function handleConvAnswerProviderChange() {
+            const provider = document.querySelector('input[name="convAnswerProvider"]:checked').value;
+            document.getElementById('convAnswerOpenAIGroup').classList.toggle('hidden', provider !== 'openai');
+            document.getElementById('convAnswerOllamaGroup').classList.toggle('hidden', provider !== 'ollama');
+        }
+
+        function handleConvRewriteProviderChange() {
+            const provider = document.querySelector('input[name="convRewriteProvider"]:checked').value;
+            document.getElementById('convRewriteOpenAIGroup').classList.toggle('hidden', provider !== 'openai');
+            document.getElementById('convRewriteOllamaGroup').classList.toggle('hidden', provider !== 'ollama');
+        }
+
+        // Ollama model loading
+        async function loadOllamaModels(context) {
+            const urlInput = context === 'default' 
+                ? document.getElementById('defaultOllamaURL')
+                : document.getElementById('convOllamaURL');
+            
+            const modelSelect = context === 'default'
+                ? document.getElementById('defaultAnswerOllamaModel')
+                : document.getElementById('convAnswerOllamaModel');
+
+            const rewriteModelSelect = context === 'default'
+                ? document.getElementById('defaultRewriteOllamaModel')
+                : document.getElementById('convRewriteOllamaModel');
+
+            try {
+                const response = await fetch('/config/ollama-models', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ ollama_url: urlInput.value })
+                });
+
+                const data = await response.json();
+
+                if (data.success && data.models.length > 0) {
+                    modelSelect.innerHTML = data.models.map(m => `<option value="${m}">${m}</option>`).join('');
+                    rewriteModelSelect.innerHTML = data.models.map(m => `<option value="${m}">${m}</option>`).join('');
+                    alert(`Loaded ${data.models.length} models from Ollama`);
+                } else {
+                    alert(`Failed to load models: ${data.message}`);
+                }
+            } catch (error) {
+                alert(`Error loading models: ${error.message}`);
+            }
+        }
+
+        // Connection tests
+        async function testDefaultAnswerProvider() {
+            const provider = document.querySelector('input[name="defaultAnswerProvider"]:checked').value;
+            const model = provider === 'openai'
+                ? document.getElementById('defaultAnswerOpenAIModel').value
+                : document.getElementById('defaultAnswerOllamaModel').value;
+            const ollamaUrl = provider === 'ollama' ? document.getElementById('defaultOllamaURL').value : null;
+
+            await testConnection(provider, model, ollamaUrl, 'defaultAnswerTestResult');
+        }
+
+        async function testDefaultRewriteProvider() {
+            const provider = document.querySelector('input[name="defaultRewriteProvider"]:checked').value;
+            if (provider === 'disabled') {
+                document.getElementById('defaultRewriteTestResult').innerHTML = '<div class="test-result success">Query rewriting is disabled</div>';
+                return;
+            }
+
+            const model = provider === 'openai'
+                ? document.getElementById('defaultRewriteOpenAIModel').value
+                : document.getElementById('defaultRewriteOllamaModel').value;
+            const ollamaUrl = provider === 'ollama' ? document.getElementById('defaultOllamaURL').value : null;
+
+            await testConnection(provider, model, ollamaUrl, 'defaultRewriteTestResult');
+        }
+
+        async function testConvAnswerProvider() {
+            const provider = document.querySelector('input[name="convAnswerProvider"]:checked').value;
+            const model = provider === 'openai'
+                ? document.getElementById('convAnswerOpenAIModel').value
+                : document.getElementById('convAnswerOllamaModel').value;
+            const ollamaUrl = provider === 'ollama' ? document.getElementById('convOllamaURL').value : null;
+
+            await testConnection(provider, model, ollamaUrl, 'convAnswerTestResult');
+        }
+
+        async function testConnection(provider, model, ollamaUrl, resultDivId) {
+            const resultDiv = document.getElementById(resultDivId);
+            resultDiv.innerHTML = '<div class="loading">Testing connection...</div>';
+
+            try {
+                const response = await fetch('/config/test-connection', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        provider: provider,
+                        model: model,
+                        ollama_url: ollamaUrl
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    resultDiv.innerHTML = `<div class="test-result success">✅ ${data.message}</div>`;
+                } else {
+                    resultDiv.innerHTML = `<div class="test-result error">❌ ${data.message}</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="test-result error">❌ Test failed: ${error.message}</div>`;
+            }
+        }
+
+        // Save/load default settings
+        function saveDefaultSettings() {
+            const answerProvider = document.querySelector('input[name="defaultAnswerProvider"]:checked').value;
+            const rewriteProvider = document.querySelector('input[name="defaultRewriteProvider"]:checked').value;
+
+            defaultSettings = {
+                answer_provider: answerProvider,
+                answer_model: answerProvider === 'openai'
+                    ? document.getElementById('defaultAnswerOpenAIModel').value
+                    : document.getElementById('defaultAnswerOllamaModel').value,
+                rewrite_provider: rewriteProvider,
+                rewrite_model: rewriteProvider === 'openai'
+                    ? document.getElementById('defaultRewriteOpenAIModel').value
+                    : (rewriteProvider === 'ollama' ? document.getElementById('defaultRewriteOllamaModel').value : null),
+                ollama_url: document.getElementById('defaultOllamaURL').value
+            };
+
+            // Save to localStorage
+            localStorage.setItem('defaultSettings', JSON.stringify(defaultSettings));
+            alert('Default settings saved!');
+            closeSettingsModal();
+        }
+
+        function loadDefaultSettings() {
+            const saved = localStorage.getItem('defaultSettings');
+            if (saved) {
+                defaultSettings = JSON.parse(saved);
+                
+                // Apply to form
+                document.querySelector(`input[name="defaultAnswerProvider"][value="${defaultSettings.answer_provider}"]`).checked = true;
+                handleDefaultAnswerProviderChange();
+                
+                if (defaultSettings.answer_provider === 'openai') {
+                    document.getElementById('defaultAnswerOpenAIModel').value = defaultSettings.answer_model;
+                } else {
+                    document.getElementById('defaultOllamaURL').value = defaultSettings.ollama_url;
+                    document.getElementById('defaultAnswerOllamaModel').value = defaultSettings.answer_model;
+                }
+
+                document.querySelector(`input[name="defaultRewriteProvider"][value="${defaultSettings.rewrite_provider}"]`).checked = true;
+                handleDefaultRewriteProviderChange();
+
+                if (defaultSettings.rewrite_provider === 'openai') {
+                    document.getElementById('defaultRewriteOpenAIModel').value = defaultSettings.rewrite_model;
+                } else if (defaultSettings.rewrite_provider === 'ollama') {
+                    document.getElementById('defaultRewriteOllamaModel').value = defaultSettings.rewrite_model;
+                }
+            }
+        }
+
+        // Utility function
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Close modals on outside click
+        window.onclick = function(event) {
+            if (event.target.classList.contains('modal')) {
+                event.target.style.display = 'none';
+            }
+        }
     </script>
 </body>
 </html>
