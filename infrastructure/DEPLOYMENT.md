@@ -2,25 +2,38 @@
 
 ## Architecture
 
-### Ingestion Pipeline
+### Simplified Architecture
+
+The system has been streamlined to use **PostgreSQL RDS only** with integrated web-based document management:
+
+**Web Application** (ECS Fargate):
+- **Main Chat Page** (`/`) - Query documents with conversation history sidebar
+- **Document Management** (`/manage`) - Upload, view, and manage documents directly in browser
+
+**Data Storage** (PostgreSQL RDS):
+- **Document Embeddings**: pgvector extension for semantic search
+- **Conversation History**: Persistent storage across deployments
+- **Metadata**: Document and chunk information
+
+**Complete Flow**:
 ```
-User Upload (Frontend) 
-    → S3 Bucket
-    → Lambda Trigger
-    → Process + Chunk + Embed
-    → OpenSearch (Vector DB)
-    → DynamoDB (Metadata)
+User → ALB → ECS Fargate Container
+         ↓
+    FastAPI Application
+         ↓
+   ┌─────┴─────┐
+   ↓           ↓
+RDS (pgvector)  Ollama (Optional SLM)
+   ↓
+OpenAI API (Embeddings + LLM)
 ```
 
-### Inference Pipeline
-```
-User Chat (Frontend)
-    → ALB
-    → ECS Fargate (FastAPI)
-    → OpenSearch (Vector Search)
-    → EC2 (SLM - Ollama)
-    → Response
-```
+**Key Benefits**:
+- ✅ **No S3 + Lambda complexity**: Documents uploaded directly through web UI
+- ✅ **No DynamoDB**: Everything in PostgreSQL for simplicity
+- ✅ **Unified interface**: All operations in one place
+- ✅ **Cost-effective**: Fewer services = lower AWS costs (~$14/month for RDS only)
+- ✅ **Easier to debug**: Single application to monitor
 
 ## Prerequisites
 
@@ -121,20 +134,52 @@ aws cloudformation deploy \
     FargateTaskMemory=4096
 ```
 
-## Usage
+## Post-Deployment Setup
 
-### Upload Documents
+### Initialize Conversations Table
+
+The conversations table is automatically created by the application on first startup. However, you can manually initialize it if needed:
 
 ```bash
-# Get bucket name from stack outputs
-BUCKET_NAME=$(aws cloudformation describe-stacks \
+# Get RDS endpoint from CloudFormation outputs
+RDS_ENDPOINT=$(aws cloudformation describe-stacks \
     --stack-name production-rag-stack \
-    --query 'Stacks[0].Outputs[?OutputKey==`DocumentsBucketName`].OutputValue' \
+    --query "Stacks[0].Outputs[?OutputKey=='RDSEndpoint'].OutputValue" \
     --output text)
 
-# Upload document
-aws s3 cp document.pdf s3://${BUCKET_NAME}/
+# Get DB password from Secrets Manager
+DB_PASSWORD=$(aws secretsmanager get-secret-value \
+    --secret-id production-rag-db-password \
+    --query SecretString \
+    --output text | jq -r .password)
+
+# Run migration script
+PGPASSWORD=$DB_PASSWORD psql \
+    -h $RDS_ENDPOINT \
+    -U raguser \
+    -d ragdb \
+    -f infrastructure/scripts/init-conversations-db.sql
 ```
+
+### Verify Conversation Storage
+
+Check that conversations are being stored in PostgreSQL:
+
+```bash
+# Connect to RDS
+PGPASSWORD=$DB_PASSWORD psql -h $RDS_ENDPOINT -U raguser -d ragdb
+
+# List conversations
+SELECT conversation_id, title, updated_at FROM conversations ORDER BY updated_at DESC LIMIT 10;
+
+# Count total conversations
+SELECT COUNT(*) FROM conversations;
+
+# Exit psql
+\q
+```
+
+## Usage
 
 ### Access Application
 
@@ -146,8 +191,31 @@ ALB_ENDPOINT=$(aws cloudformation describe-stacks \
     --output text)
 
 # Open in browser
-echo "http://${ALB_ENDPOINT}"
+echo "Main Chat Page: http://${ALB_ENDPOINT}"
+echo "Document Management: http://${ALB_ENDPOINT}/manage"
 ```
+
+### Web Interface
+
+The application provides two main pages:
+
+1. **Main Chat Page** (`/`)
+   - Clean, focused interface for chatting with documents
+   - "Manage Documents" button with document count badge
+   - Conversation history and settings
+   - Source citations with each answer
+
+2. **Document Management Page** (`/manage`)
+   - Upload documents (drag-and-drop or file select)
+   - Batch upload multiple files
+   - Search and filter documents by name
+   - Sort by name or chunk count
+   - Bulk select and delete
+   - View document details (all chunks)
+   - Download original files
+   - Statistics dashboard (total docs, chunks, selected)
+
+**Navigation**: Click "📚 Manage Documents" button on main page, or visit `/manage` directly
 
 ### Monitor
 

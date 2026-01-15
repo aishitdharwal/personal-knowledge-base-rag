@@ -54,6 +54,7 @@ CHUNK_SIZE = 1000  # characters
 CHUNK_OVERLAP = 200  # characters
 
 # Vector Store Configuration
+DATA_PATH = "data"
 FAISS_INDEX_PATH = "data/faiss_index"
 METADATA_PATH = "data/metadata.json"
 DOCUMENTS_PATH = "data/documents"

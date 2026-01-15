@@ -1,26 +1,37 @@
 from typing import List, Dict, Optional
+from datetime import datetime
+import json
+import os
 from app.vector_store import VectorStore
 from app.models import LLMSettings
 from app.providers.base import LLMProvider
 from app.providers.openai_provider import OpenAILLMProvider
 from app.providers.ollama_provider import OllamaLLMProvider
+from app.conversation_store import ConversationStore
 from app.config import (
-    TOP_K_RESULTS, 
+    TOP_K_RESULTS,
     MAX_CONVERSATION_HISTORY,
     QUERY_REWRITE_HISTORY,
     DEFAULT_ANSWER_PROVIDER,
     DEFAULT_ANSWER_MODEL,
     DEFAULT_REWRITE_PROVIDER,
     DEFAULT_REWRITE_MODEL,
-    DEFAULT_OLLAMA_URL
+    DEFAULT_OLLAMA_URL,
+    DATA_PATH
 )
 
 class RAGEngine:
     """Handles the RAG pipeline with conversation memory, query rewriting, and multi-provider support"""
-    
-    def __init__(self, vector_store: VectorStore):
+
+    def __init__(self, vector_store: VectorStore, conversation_store: Optional[ConversationStore] = None):
         self.vector_store = vector_store
-        self.conversations = {}  # conversation_id -> {messages: [...], settings: LLMSettings}
+        self.conversations = {}  # conversation_id -> {messages: [...], settings: LLMSettings, title: str, created_at: str, updated_at: str}
+        self.conversations_path = os.path.join(DATA_PATH, "conversations.json")
+
+        # Initialize conversation store (PostgreSQL or fallback to JSON)
+        self.conversation_store = conversation_store or ConversationStore()
+
+        self._load_conversations()
     
     def _get_default_settings(self) -> LLMSettings:
         """Get default LLM settings"""
@@ -187,16 +198,28 @@ Rewrite the current query to be standalone and self-contained:"""}
     
     def _add_to_conversation(self, conversation_id: str, role: str, content: str, settings: LLMSettings):
         """Add a message to conversation history"""
+        current_time = datetime.now().isoformat()
+
         if conversation_id not in self.conversations:
+            # New conversation - generate title from first user message
+            title = self._generate_title(content) if role == 'user' else 'New Conversation'
             self.conversations[conversation_id] = {
                 'messages': [],
-                'settings': settings
+                'settings': settings,
+                'title': title,
+                'created_at': current_time,
+                'updated_at': current_time
             }
-        
+
+        # Update conversation
         self.conversations[conversation_id]['messages'].append({
             'role': role,
             'content': content
         })
+        self.conversations[conversation_id]['updated_at'] = current_time
+
+        # Save to disk after each message
+        self._save_conversations()
         
         # Update settings
         self.conversations[conversation_id]['settings'] = settings
@@ -312,7 +335,127 @@ User question: {query}"""
         """Clear conversation history for a specific conversation"""
         if conversation_id in self.conversations:
             del self.conversations[conversation_id]
-    
+            self._save_conversations()
+
+    def delete_conversation(self, conversation_id: str):
+        """Delete a specific conversation"""
+        if conversation_id in self.conversations:
+            del self.conversations[conversation_id]
+
+            # Delete from database if available
+            if self.conversation_store.is_available():
+                try:
+                    self.conversation_store.delete_conversation(conversation_id)
+                except Exception as e:
+                    print(f"Error deleting conversation from PostgreSQL: {e}")
+
+            # Save updated state
+            self._save_conversations()
+            return True
+        return False
+
     def get_active_conversations(self) -> List[str]:
         """Get list of active conversation IDs"""
         return list(self.conversations.keys())
+
+    def get_all_conversations(self) -> List[Dict]:
+        """Get all conversations with metadata"""
+        conversations_list = []
+        for conv_id, conv_data in self.conversations.items():
+            messages = conv_data.get('messages', [])
+            conversations_list.append({
+                'conversation_id': conv_id,
+                'title': conv_data.get('title', 'Untitled Conversation'),
+                'created_at': conv_data.get('created_at', ''),
+                'updated_at': conv_data.get('updated_at', ''),
+                'message_count': len(messages),
+                'preview': messages[0]['content'][:100] if messages else ''
+            })
+
+        # Sort by updated_at descending (most recent first)
+        conversations_list.sort(key=lambda x: x['updated_at'], reverse=True)
+        return conversations_list
+
+    def get_conversation(self, conversation_id: str) -> Optional[Dict]:
+        """Get a specific conversation with all its messages"""
+        if conversation_id not in self.conversations:
+            return None
+
+        conv_data = self.conversations[conversation_id]
+        return {
+            'conversation_id': conversation_id,
+            'title': conv_data.get('title', 'Untitled Conversation'),
+            'created_at': conv_data.get('created_at', ''),
+            'updated_at': conv_data.get('updated_at', ''),
+            'messages': conv_data.get('messages', []),
+            'settings': conv_data.get('settings')
+        }
+
+    def _generate_title(self, first_message: str) -> str:
+        """Generate a title from the first message"""
+        # Take first 50 chars and clean up
+        title = first_message[:50].strip()
+        if len(first_message) > 50:
+            title += "..."
+        return title
+
+    def _load_conversations(self):
+        """Load conversations from PostgreSQL or disk (fallback)"""
+        # Try loading from database first
+        if self.conversation_store.is_available():
+            try:
+                self.conversations = self.conversation_store.load_all_conversations_for_memory()
+                print(f"Loaded {len(self.conversations)} conversations from PostgreSQL")
+                return
+            except Exception as e:
+                print(f"Error loading conversations from PostgreSQL: {e}")
+
+        # Fallback to JSON file
+        if os.path.exists(self.conversations_path):
+            try:
+                with open(self.conversations_path, 'r') as f:
+                    data = json.load(f)
+                    # Convert settings dict back to LLMSettings objects
+                    for conv_id, conv_data in data.items():
+                        if 'settings' in conv_data and conv_data['settings']:
+                            conv_data['settings'] = LLMSettings(**conv_data['settings'])
+                    self.conversations = data
+                print(f"Loaded {len(self.conversations)} conversations from JSON file")
+            except Exception as e:
+                print(f"Error loading conversations from JSON: {e}")
+                self.conversations = {}
+        else:
+            self.conversations = {}
+
+    def _save_conversations(self):
+        """Save conversations to PostgreSQL or disk (fallback)"""
+        # Try saving to database first
+        if self.conversation_store.is_available():
+            try:
+                for conv_id, conv_data in self.conversations.items():
+                    self.conversation_store.save_conversation(conv_id, conv_data)
+                # Also save to JSON as backup
+                self._save_to_json_file()
+                return
+            except Exception as e:
+                print(f"Error saving conversations to PostgreSQL: {e}")
+
+        # Fallback to JSON file only
+        self._save_to_json_file()
+
+    def _save_to_json_file(self):
+        """Save conversations to JSON file"""
+        try:
+            # Convert LLMSettings objects to dicts for JSON serialization
+            serializable_data = {}
+            for conv_id, conv_data in self.conversations.items():
+                serializable_conv = conv_data.copy()
+                if 'settings' in serializable_conv and serializable_conv['settings']:
+                    serializable_conv['settings'] = serializable_conv['settings'].dict()
+                serializable_data[conv_id] = serializable_conv
+
+            os.makedirs(os.path.dirname(self.conversations_path), exist_ok=True)
+            with open(self.conversations_path, 'w') as f:
+                json.dump(serializable_data, f, indent=2)
+        except Exception as e:
+            print(f"Error saving conversations to JSON: {e}")

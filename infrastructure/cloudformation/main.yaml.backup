@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: 'Personal Knowledge Base RAG System - PostgreSQL with Web UI Management'
+Description: 'Personal Knowledge Base RAG System - Simplified (All Public, No NAT)'
 
 Parameters:
   EnvironmentName:
@@ -52,7 +52,7 @@ Parameters:
     MaxValue: 10
 
 Resources:
-  # ==================== VPC with Public Subnets ====================
+  # ==================== Simple VPC with Public Subnets Only ====================
   VPC:
     Type: AWS::EC2::VPC
     Properties:
@@ -99,7 +99,7 @@ Resources:
         - Key: Name
           Value: !Sub ${EnvironmentName}-public-2
 
-  # Route table for public subnets
+  # Single route table for all public subnets
   PublicRouteTable:
     Type: AWS::EC2::RouteTable
     Properties:
@@ -127,6 +127,76 @@ Resources:
     Properties:
       RouteTableId: !Ref PublicRouteTable
       SubnetId: !Ref PublicSubnet2
+
+  # ==================== S3 Bucket ====================
+  # Lambda Permission must be created first
+  S3InvokeLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref IngestionLambda
+      Action: lambda:InvokeFunction
+      Principal: s3.amazonaws.com
+      SourceArn: !Sub arn:aws:s3:::${EnvironmentName}-rag-docs-${AWS::AccountId}
+
+  DocumentsBucket:
+    Type: AWS::S3::Bucket
+    DependsOn: S3InvokeLambdaPermission
+    Properties:
+      BucketName: !Sub ${EnvironmentName}-rag-docs-${AWS::AccountId}
+      VersioningConfiguration:
+        Status: Enabled
+      LifecycleConfiguration:
+        Rules:
+          - Id: DeleteOldVersions
+            Status: Enabled
+            NoncurrentVersionExpirationInDays: 30
+      NotificationConfiguration:
+        LambdaConfigurations:
+          - Event: s3:ObjectCreated:*
+            Function: !GetAtt IngestionLambda.Arn
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName}-documents
+
+  # ==================== DynamoDB Tables ====================
+  VectorStoreTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub ${EnvironmentName}-rag-vectors
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: doc_id
+          AttributeType: S
+        - AttributeName: chunk_id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: doc_id
+          KeyType: HASH
+        - AttributeName: chunk_id
+          KeyType: RANGE
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName}-vectors
+
+  MetadataTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub ${EnvironmentName}-rag-metadata
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: doc_id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: doc_id
+          KeyType: HASH
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName}-metadata
 
   # ==================== Secrets Manager ====================
   APIKeysSecret:
@@ -176,45 +246,90 @@ Resources:
         - Key: Name
           Value: !Sub ${EnvironmentName}-rds-subnet-group
 
-  # Aurora Serverless v2 Cluster
-  AuroraCluster:
-    Type: AWS::RDS::DBCluster
+  RDSInstance:
+    Type: AWS::RDS::DBInstance
     Properties:
-      DBClusterIdentifier: !Sub ${EnvironmentName}-rag-cluster
-      Engine: aurora-postgresql
-      EngineMode: provisioned
+      DBInstanceIdentifier: !Sub ${EnvironmentName}-rag-db
+      Engine: postgres
       EngineVersion: '17.7'
-      Port: 5432
-      DatabaseName: ragdb
+      DBInstanceClass: db.t4g.micro
+      AllocatedStorage: 20
+      StorageType: gp3
       MasterUsername: raguser
       MasterUserPassword: !Sub '{{resolve:secretsmanager:${DBPasswordSecret}:SecretString:password}}'
+      DBName: ragdb
       DBSubnetGroupName: !Ref RDSSubnetGroup
-      VpcSecurityGroupIds:
+      VPCSecurityGroups:
         - !Ref RDSSecurityGroup
+      PubliclyAccessible: true
       BackupRetentionPeriod: 7
       PreferredBackupWindow: "03:00-04:00"
       PreferredMaintenanceWindow: "mon:04:00-mon:05:00"
-      ServerlessV2ScalingConfiguration:
-        MinCapacity: 0.5
-        MaxCapacity: 1.0
-      EnableHttpEndpoint: false
+      EnablePerformanceInsights: false
       DeletionProtection: false
       Tags:
         - Key: Name
-          Value: !Sub ${EnvironmentName}-aurora-cluster
+          Value: !Sub ${EnvironmentName}-rds
 
-  # Aurora Serverless v2 Instance
-  AuroraInstance:
-    Type: AWS::RDS::DBInstance
+  # ==================== Lambda for Document Ingestion ====================
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
     Properties:
-      DBInstanceIdentifier: !Sub ${EnvironmentName}-rag-instance
-      DBClusterIdentifier: !Ref AuroraCluster
-      DBInstanceClass: db.serverless
-      Engine: aurora-postgresql
-      PubliclyAccessible: true
-      Tags:
-        - Key: Name
-          Value: !Sub ${EnvironmentName}-aurora-instance
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: LambdaExecutionPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:ListBucket
+                Resource:
+                  - !Sub arn:aws:s3:::${EnvironmentName}-rag-docs-${AWS::AccountId}
+                  - !Sub arn:aws:s3:::${EnvironmentName}-rag-docs-${AWS::AccountId}/*
+              - Effect: Allow
+                Action:
+                  - dynamodb:PutItem
+                  - dynamodb:GetItem
+                  - dynamodb:UpdateItem
+                  - dynamodb:Query
+                Resource:
+                  - !GetAtt VectorStoreTable.Arn
+                  - !GetAtt MetadataTable.Arn
+              - Effect: Allow
+                Action:
+                  - secretsmanager:GetSecretValue
+                Resource:
+                  - !Ref APIKeysSecret
+
+  IngestionLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub ${EnvironmentName}-rag-ingestion
+      Runtime: python3.11
+      Handler: index.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Timeout: 900
+      MemorySize: 3008
+      Environment:
+        Variables:
+          VECTOR_STORE_TABLE: !Ref VectorStoreTable
+          METADATA_TABLE: !Ref MetadataTable
+          SECRETS_ARN: !Ref APIKeysSecret
+          ENVIRONMENT: !Ref EnvironmentName
+      Code:
+        ZipFile: |
+          def lambda_handler(event, context):
+              return {'statusCode': 200, 'body': 'Placeholder - Update with actual Lambda code'}
 
   # ==================== ECS Cluster & Fargate ====================
   ECSCluster:
@@ -273,6 +388,24 @@ Resources:
             Statement:
               - Effect: Allow
                 Action:
+                  - s3:*
+                Resource:
+                  - !Sub arn:aws:s3:::${EnvironmentName}-rag-docs-${AWS::AccountId}
+                  - !Sub arn:aws:s3:::${EnvironmentName}-rag-docs-${AWS::AccountId}/*
+              - Effect: Allow
+                Action:
+                  - dynamodb:*
+                Resource:
+                  - !GetAtt VectorStoreTable.Arn
+                  - !GetAtt MetadataTable.Arn
+              - Effect: Allow
+                Action:
+                  - secretsmanager:GetSecretValue
+                Resource:
+                  - !Ref APIKeysSecret
+              - Effect: Allow
+                Action:
+
                   - textract:DetectDocumentText
                   - textract:AnalyzeDocument
                 Resource: '*'
@@ -343,12 +476,16 @@ Resources:
           Environment:
             - Name: ENVIRONMENT
               Value: !Ref EnvironmentName
+            - Name: VECTOR_STORE_TABLE
+              Value: !Ref VectorStoreTable
+            - Name: METADATA_TABLE
+              Value: !Ref MetadataTable
             - Name: OLLAMA_URL
               Value: !Ref OllamaURL
             - Name: DOCUMENTS_PATH
               Value: /tmp/documents
             - Name: DB_HOST
-              Value: !GetAtt AuroraCluster.Endpoint.Address
+              Value: !GetAtt RDSInstance.Endpoint.Address
             - Name: DB_PORT
               Value: '5432'
             - Name: DB_NAME
@@ -366,9 +503,7 @@ Resources:
   # Fargate Service
   FargateService:
     Type: AWS::ECS::Service
-    DependsOn:
-      - ALBListener
-      - AuroraInstance
+    DependsOn: ALBListener
     Properties:
       ServiceName: !Sub ${EnvironmentName}-rag-service
       Cluster: !Ref ECSCluster
@@ -392,7 +527,7 @@ Resources:
   # ==================== Application Load Balancer ====================
   ApplicationLoadBalancer:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
-    DependsOn:
+    DependsOn: 
       - InternetGatewayAttachment
       - PublicSubnet1RouteTableAssociation
       - PublicSubnet2RouteTableAssociation
@@ -438,28 +573,42 @@ Resources:
       Protocol: HTTP
 
 Outputs:
-  ApplicationURL:
-    Description: Access your application here
-    Value: !Sub http://${ApplicationLoadBalancer.DNSName}
-
-  ManageDocumentsURL:
-    Description: Document management interface
-    Value: !Sub http://${ApplicationLoadBalancer.DNSName}/manage
-
   ALBEndpoint:
     Description: Application Load Balancer endpoint
     Value: !GetAtt ApplicationLoadBalancer.DNSName
     Export:
       Name: !Sub ${EnvironmentName}-alb-endpoint
 
-  DatabaseEndpoint:
-    Description: Aurora Serverless v2 PostgreSQL endpoint
-    Value: !GetAtt AuroraCluster.Endpoint.Address
+  DocumentsBucketName:
+    Description: S3 bucket for documents
+    Value: !Ref DocumentsBucket
     Export:
-      Name: !Sub ${EnvironmentName}-database-endpoint
+      Name: !Sub ${EnvironmentName}-documents-bucket
+
+  VectorStoreTableName:
+    Description: DynamoDB vector store table
+    Value: !Ref VectorStoreTable
+    Export:
+      Name: !Sub ${EnvironmentName}-vector-table
+
+  MetadataTableName:
+    Description: DynamoDB metadata table
+    Value: !Ref MetadataTable
+    Export:
+      Name: !Sub ${EnvironmentName}-metadata-table
 
   OllamaURL:
     Description: Configured Ollama URL
     Value: !Ref OllamaURL
     Export:
       Name: !Sub ${EnvironmentName}-ollama-url
+
+  ApplicationURL:
+    Description: Access your application here
+    Value: !Sub http://${ApplicationLoadBalancer.DNSName}
+
+  RDSEndpoint:
+    Description: RDS PostgreSQL endpoint
+    Value: !GetAtt RDSInstance.Endpoint.Address
+    Export:
+      Name: !Sub ${EnvironmentName}-rds-endpoint
