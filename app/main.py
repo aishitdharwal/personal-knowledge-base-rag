@@ -46,6 +46,11 @@ async def home(request: Request):
     """Serve the main web interface"""
     return templates.TemplateResponse("index.html", {"request": request})
 
+@app.get("/manage", response_class=HTMLResponse)
+async def manage(request: Request):
+    """Serve the knowledge base management interface"""
+    return templates.TemplateResponse("manage.html", {"request": request})
+
 @app.post("/upload", response_model=UploadResponse)
 async def upload_document(file: UploadFile = File(...)):
     """

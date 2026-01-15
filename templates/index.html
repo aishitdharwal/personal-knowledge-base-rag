@@ -45,6 +45,25 @@
             font-size: 16px;
         }
 
+        .manage-link {
+            position: absolute;
+            top: 30px;
+            left: 30px;
+            padding: 10px 20px;
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: 2px solid white;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+
+        .manage-link:hover {
+            background: white;
+            color: #667eea;
+        }
+
         .settings-icon {
             position: absolute;
             top: 30px;
@@ -595,6 +614,7 @@
 <body>
     <div class="container">
         <div class="header">
+            <a href="/manage" class="manage-link">📚 Manage KB</a>
             <div class="settings-icon" onclick="openSettingsModal()">⚙️</div>
             <h1>🧠 Personal Knowledge Base</h1>
             <p>Upload your documents (txt, md, pdf) and have intelligent conversations with your knowledge</p>
