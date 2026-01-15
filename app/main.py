@@ -1,14 +1,15 @@
 from fastapi import FastAPI, UploadFile, File, HTTPException, Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from typing import List
 import uuid
 import os
 import shutil
 from datetime import datetime
 
 from app.models import (
-    ChatMessage, ChatResponse, UploadResponse, 
+    ChatMessage, ChatResponse, UploadResponse,
     ConnectionTestRequest, ConnectionTestResponse,
     OllamaModelsRequest, OllamaModelsResponse,
     EmbeddingSettings
@@ -47,8 +48,8 @@ async def home(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
 @app.get("/manage", response_class=HTMLResponse)
-async def manage(request: Request):
-    """Serve the knowledge base management interface"""
+async def manage_documents(request: Request):
+    """Serve the document management interface"""
     return templates.TemplateResponse("manage.html", {"request": request})
 
 @app.post("/upload", response_model=UploadResponse)
@@ -267,17 +268,60 @@ async def get_ocr_status():
     """Get OCR availability and configuration status"""
     return document_processor.get_ocr_status()
 
+# Conversation management endpoints
+
+@app.get("/conversations")
+async def list_conversations():
+    """Get all conversations with metadata"""
+    try:
+        conversations = rag_engine.get_all_conversations()
+        return {"conversations": conversations}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error listing conversations: {str(e)}")
+
+@app.get("/conversations/{conversation_id}")
+async def get_conversation(conversation_id: str):
+    """Get a specific conversation with all messages"""
+    try:
+        conversation = rag_engine.get_conversation(conversation_id)
+        if conversation is None:
+            raise HTTPException(status_code=404, detail="Conversation not found")
+
+        # Convert LLMSettings to dict if present
+        if conversation.get('settings'):
+            conversation['settings'] = conversation['settings'].dict()
+
+        return conversation
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error getting conversation: {str(e)}")
+
+@app.delete("/conversations/{conversation_id}")
+async def delete_conversation(conversation_id: str):
+    """Delete a specific conversation"""
+    try:
+        success = rag_engine.delete_conversation(conversation_id)
+        if not success:
+            raise HTTPException(status_code=404, detail="Conversation not found")
+
+        return {"message": "Conversation deleted successfully"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error deleting conversation: {str(e)}")
+
 @app.get("/health")
 async def health_check():
     """Health check endpoint"""
     embedding_settings = vector_store.get_embedding_settings()
     ocr_status = document_processor.get_ocr_status()
-    
+
     # Get document count
     all_docs = vector_store.get_all_documents()
     total_docs = len(all_docs)
     total_chunks = sum(doc['num_chunks'] for doc in all_docs)
-    
+
     return {
         "status": "healthy",
         "total_chunks": total_chunks,
@@ -289,6 +333,166 @@ async def health_check():
         "ocr_engine": ocr_status.get('engine'),
         "textract_available": ocr_status['textract_available'],
         "vector_store_type": "PostgreSQL" if USE_POSTGRES else "FAISS"
+    }
+
+# New endpoints for enhanced document management
+
+@app.get("/documents/{doc_id}/details")
+async def get_document_details(doc_id: str):
+    """Get detailed information about a document including all chunks"""
+    try:
+        # Get all chunks for this document
+        chunks = [chunk for chunk in vector_store.chunks if chunk.doc_id == doc_id]
+
+        if not chunks:
+            raise HTTPException(status_code=404, detail=f"Document {doc_id} not found")
+
+        # Get file info
+        file_path = None
+        file_size = 0
+        for filename in os.listdir(DOCUMENTS_PATH):
+            if filename.startswith(doc_id):
+                file_path = os.path.join(DOCUMENTS_PATH, filename)
+                file_size = os.path.getsize(file_path)
+                break
+
+        return {
+            "doc_id": doc_id,
+            "doc_name": chunks[0].doc_name,
+            "num_chunks": len(chunks),
+            "file_size": file_size,
+            "chunks": [
+                {
+                    "chunk_id": chunk.chunk_id,
+                    "text": chunk.text,
+                    "start_char": chunk.start_char,
+                    "end_char": chunk.end_char
+                }
+                for chunk in sorted(chunks, key=lambda x: x.chunk_id)
+            ]
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error getting document details: {str(e)}")
+
+@app.get("/documents/{doc_id}/download")
+async def download_document(doc_id: str):
+    """Download the original document file"""
+    try:
+        # Find the file
+        file_path = None
+        original_filename = None
+
+        for filename in os.listdir(DOCUMENTS_PATH):
+            if filename.startswith(doc_id):
+                file_path = os.path.join(DOCUMENTS_PATH, filename)
+                # Extract original filename (format: {doc_id}_{original_filename})
+                original_filename = filename[len(doc_id) + 1:]
+                break
+
+        if not file_path or not os.path.exists(file_path):
+            raise HTTPException(status_code=404, detail=f"Document {doc_id} not found")
+
+        return FileResponse(
+            path=file_path,
+            filename=original_filename,
+            media_type='application/octet-stream'
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error downloading document: {str(e)}")
+
+@app.post("/documents/batch-delete")
+async def batch_delete_documents(doc_ids: List[str]):
+    """Delete multiple documents at once"""
+    try:
+        deleted = []
+        errors = []
+
+        for doc_id in doc_ids:
+            try:
+                vector_store.delete_document(doc_id)
+
+                # Delete file from disk
+                for filename in os.listdir(DOCUMENTS_PATH):
+                    if filename.startswith(doc_id):
+                        os.remove(os.path.join(DOCUMENTS_PATH, filename))
+                        break
+
+                deleted.append(doc_id)
+            except Exception as e:
+                errors.append({"doc_id": doc_id, "error": str(e)})
+
+        return {
+            "message": f"Successfully deleted {len(deleted)} document(s)",
+            "deleted": deleted,
+            "errors": errors
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error in batch delete: {str(e)}")
+
+@app.post("/upload-batch")
+async def upload_batch_documents(files: List[UploadFile] = File(...)):
+    """Upload and process multiple documents at once"""
+    results = []
+
+    for file in files:
+        try:
+            # Validate file type
+            if not file.filename.endswith(('.txt', '.md', '.pdf')):
+                results.append({
+                    "filename": file.filename,
+                    "success": False,
+                    "error": "Only .txt, .md, and .pdf files are supported"
+                })
+                continue
+
+            # Check if embedding provider is set
+            if vector_store.embedding_provider is None:
+                results.append({
+                    "filename": file.filename,
+                    "success": False,
+                    "error": "Please select an embedding provider before uploading documents"
+                })
+                continue
+
+            # Generate unique document ID
+            doc_id = str(uuid.uuid4())
+
+            # Save uploaded file
+            file_path = os.path.join(DOCUMENTS_PATH, f"{doc_id}_{file.filename}")
+            with open(file_path, 'wb') as f:
+                shutil.copyfileobj(file.file, f)
+
+            # Get file size
+            file_size = os.path.getsize(file_path)
+
+            # Process document into chunks
+            chunks = document_processor.process_document(file_path, doc_id, file.filename)
+
+            # Add chunks to vector store
+            vector_store.add_documents(chunks)
+
+            results.append({
+                "filename": file.filename,
+                "success": True,
+                "doc_id": doc_id,
+                "num_chunks": len(chunks)
+            })
+
+        except Exception as e:
+            results.append({
+                "filename": file.filename,
+                "success": False,
+                "error": str(e)
+            })
+
+    successful = sum(1 for r in results if r.get("success"))
+    return {
+        "message": f"Processed {successful}/{len(files)} files successfully",
+        "results": results
     }
 
 if __name__ == "__main__":

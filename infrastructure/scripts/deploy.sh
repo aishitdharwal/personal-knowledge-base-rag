@@ -83,16 +83,6 @@ docker push ${ECR_REPO}:latest
 
 cd ../..
 
-# Package Lambda function
-echo -e "${YELLOW}Packaging Lambda function...${NC}"
-cd infrastructure/lambda/ingestion
-python3 -m pip install -r requirements.txt -t . 2>/dev/null || true
-zip -r ../../../lambda-package.zip . -x "*.pyc" -x "__pycache__/*" 2>/dev/null || true
-cd ../../..
-
-# Upload Lambda package to S3 (optional, using inline code for now)
-# Skipping S3 upload since we're using inline code in CloudFormation
-
 # Deploy CloudFormation stack
 echo -e "${YELLOW}Deploying CloudFormation stack...${NC}"
 aws cloudformation deploy \
@@ -116,19 +106,21 @@ ALB_ENDPOINT=$(aws cloudformation describe-stacks \
     --query 'Stacks[0].Outputs[?OutputKey==`ALBEndpoint`].OutputValue' \
     --output text)
 
-S3_BUCKET=$(aws cloudformation describe-stacks \
+DB_ENDPOINT=$(aws cloudformation describe-stacks \
     --stack-name ${STACK_NAME} \
     --region ${AWS_REGION} \
-    --query 'Stacks[0].Outputs[?OutputKey==`DocumentsBucketName`].OutputValue' \
+    --query 'Stacks[0].Outputs[?OutputKey==`DatabaseEndpoint`].OutputValue' \
     --output text)
 
 echo -e "${GREEN}Application URL: http://${ALB_ENDPOINT}${NC}"
-echo -e "${GREEN}Upload documents to: s3://${S3_BUCKET}${NC}"
+echo -e "${GREEN}Document Management: http://${ALB_ENDPOINT}/manage${NC}"
+echo -e "${GREEN}Database Endpoint (Aurora Serverless v2): ${DB_ENDPOINT}${NC}"
 echo ""
 echo -e "${YELLOW}Next steps:${NC}"
-echo "1. Upload documents: aws s3 cp your-document.pdf s3://${S3_BUCKET}/"
-echo "2. Access the application: http://${ALB_ENDPOINT}"
+echo "1. Access the application: http://${ALB_ENDPOINT}"
+echo "2. Upload documents via web UI: http://${ALB_ENDPOINT}/manage"
 echo "3. Monitor logs: aws logs tail /ecs/${ENVIRONMENT}-rag --follow --region ${AWS_REGION}"
+echo "4. Verify conversations in RDS (see DEPLOYMENT.md for commands)"
 echo ""
 echo -e "${YELLOW}Update Ollama URL later:${NC}"
 echo "aws cloudformation update-stack \\"
