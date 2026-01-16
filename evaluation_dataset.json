@@ -1,0 +1,42 @@
+[
+  {
+    "question": "What is RAG and how does it work?",
+    "ground_truth": "RAG (Retrieval-Augmented Generation) is a technique that combines information retrieval with text generation. It works by first retrieving relevant documents from a knowledge base using semantic search, then using those documents as context to generate accurate and grounded responses using a language model."
+  },
+  {
+    "question": "What embedding models are supported by the system?",
+    "ground_truth": "The system supports OpenAI embedding models (text-embedding-3-small and text-embedding-3-large) and local sentence transformer models (all-MiniLM-L6-v2 and all-mpnet-base-v2)."
+  },
+  {
+    "question": "How is conversation history managed?",
+    "ground_truth": "Conversation history is stored in a PostgreSQL database using the ConversationDB model. Each conversation has a unique ID, title, timestamps, messages array, and settings. The system supports creating, loading, and deleting conversations through a web UI."
+  },
+  {
+    "question": "What infrastructure does the system use for deployment?",
+    "ground_truth": "The system is deployed on AWS using ECS Fargate for containerized hosting, Aurora Serverless v2 for PostgreSQL database with pgvector extension, Application Load Balancer for traffic routing, and CloudFormation for infrastructure as code."
+  },
+  {
+    "question": "What LLM providers are available for answering questions?",
+    "ground_truth": "The system supports OpenAI models (GPT-4, GPT-4o, GPT-4o-mini, GPT-3.5-turbo) and local models through Ollama integration. Users can switch between providers in the conversation settings."
+  },
+  {
+    "question": "How does query rewriting work in the system?",
+    "ground_truth": "Query rewriting uses GPT-3.5 Turbo to reformulate user queries for better retrieval. It considers conversation history to resolve references and ambiguities, making queries more specific and effective for semantic search."
+  },
+  {
+    "question": "What document formats can be uploaded to the knowledge base?",
+    "ground_truth": "The system supports PDF, DOCX, TXT, and Markdown files. Documents are processed to extract text, split into chunks, embedded using the configured embedding model, and stored in a vector database for semantic search."
+  },
+  {
+    "question": "How does the vector search retrieve relevant documents?",
+    "ground_truth": "The system converts user queries into embeddings using the same embedding model used for documents. It then performs semantic similarity search in the vector database to find the most relevant document chunks based on cosine similarity scores."
+  },
+  {
+    "question": "What is the Aurora Serverless v2 configuration?",
+    "ground_truth": "Aurora Serverless v2 is configured with PostgreSQL 17.7 engine, automatic scaling between 0.5 and 1.0 ACU (Aurora Capacity Units), 7-day backup retention, and pgvector extension for vector similarity search. It provides cost-effective auto-scaling database capacity."
+  },
+  {
+    "question": "How can users manage their knowledge base documents?",
+    "ground_truth": "Users can manage documents through a dedicated web interface at the /manage endpoint. They can upload new documents, view all documents with metadata, delete documents, and see document counts. The interface shows document names, upload dates, chunk counts, and file sizes."
+  }
+]
