@@ -16,7 +16,7 @@ RAGAS (Retrieval-Augmented Generation Assessment) is a framework specifically de
 
 ```bash
 # Install evaluation dependencies
-pip install -r requirements-eval.txt
+python3 -m pip install -r requirements-eval.txt
 ```
 
 ## Quick Start

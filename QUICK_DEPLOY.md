@@ -4,10 +4,10 @@
 
 ```bash
 # Deploy to production
-./infrastructure/scripts/deploy.sh production us-east-1
+./infrastructure/scripts/deploy.sh production ap-south-1
 
 # Validate deployment
-./infrastructure/scripts/validate-deployment.sh production us-east-1
+./infrastructure/scripts/validate-deployment.sh production ap-south-1
 ```
 
 ## 📋 Pre-Deployment Checklist

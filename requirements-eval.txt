@@ -1,7 +1,7 @@
 # RAG Evaluation Requirements
 # Install with: pip install -r requirements-eval.txt
 
-ragas>=0.1.0
-datasets>=2.16.0
-langchain-openai>=0.0.2
-requests>=2.31.0
+ragas
+datasets
+langchain-openai
+requests
