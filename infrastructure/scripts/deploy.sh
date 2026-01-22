@@ -72,14 +72,17 @@ aws ecr get-login-password --region ${AWS_REGION} | \
     docker login --username AWS --password-stdin ${ECR_REPO}
 
 # Build Docker image for linux/amd64 platform (cross-platform build for Mac ARM -> Linux x86)
-echo -e "${YELLOW}Building Docker image for linux/amd64...${NC}"
+echo -e "${YELLOW}Building Docker image for linux/amd64 (no cache)...${NC}"
 cd infrastructure/docker
-docker buildx build --platform linux/amd64 -t ${ENVIRONMENT}-rag:latest -f Dockerfile ../../ --load
+docker buildx build --no-cache --platform linux/amd64 -t ${ENVIRONMENT}-rag:latest -f Dockerfile ../../ --load
 
-# Tag and push image
-echo -e "${YELLOW}Pushing Docker image to ECR...${NC}"
+# Tag and push image with timestamp for cache busting
+TIMESTAMP=$(date +%Y%m%d%H%M%S)
+echo -e "${YELLOW}Pushing Docker image to ECR with tag: latest and ${TIMESTAMP}...${NC}"
 docker tag ${ENVIRONMENT}-rag:latest ${ECR_REPO}:latest
+docker tag ${ENVIRONMENT}-rag:latest ${ECR_REPO}:${TIMESTAMP}
 docker push ${ECR_REPO}:latest
+docker push ${ECR_REPO}:${TIMESTAMP}
 
 cd ../..
 
@@ -94,6 +97,23 @@ aws cloudformation deploy \
         OllamaURL=${OLLAMA_URL} \
     --capabilities CAPABILITY_IAM \
     --region ${AWS_REGION}
+
+# Force ECS service to deploy new task definition with latest image
+echo -e "${YELLOW}Forcing ECS service update to pick up new Docker image...${NC}"
+aws ecs update-service \
+    --cluster ${ENVIRONMENT}-rag-cluster \
+    --service ${ENVIRONMENT}-rag-service \
+    --force-new-deployment \
+    --region ${AWS_REGION} \
+    > /dev/null 2>&1 || echo "Service update initiated"
+
+echo -e "${YELLOW}Waiting for service to stabilize (this may take 2-3 minutes)...${NC}"
+aws ecs wait services-stable \
+    --cluster ${ENVIRONMENT}-rag-cluster \
+    --services ${ENVIRONMENT}-rag-service \
+    --region ${AWS_REGION}
+
+echo -e "${GREEN}Service update complete!${NC}"
 
 # Get stack outputs
 echo -e "${GREEN}========================================${NC}"
