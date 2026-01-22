@@ -27,6 +27,9 @@ app = FastAPI(title="Personal Knowledge Base with Multi-Provider Support", versi
 # Setup templates
 templates = Jinja2Templates(directory="templates")
 
+# Mount static files
+app.mount("/static", StaticFiles(directory="templates"), name="static")
+
 # Initialize components - Use PostgreSQL if enabled, otherwise FAISS
 USE_POSTGRES = os.getenv('USE_POSTGRES', 'false').lower() == 'true'
 

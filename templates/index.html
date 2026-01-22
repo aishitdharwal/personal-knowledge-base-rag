@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Personal Knowledge Base</title>
+    <title>AI Classroom - RAG Knowledge Base</title>
     <style>
         * {
             margin: 0;
@@ -13,68 +13,107 @@
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
             min-height: 100vh;
-            padding: 20px;
+            padding: 0;
+            margin: 0;
         }
 
         .container {
-            max-width: 1400px;
-            margin: 0 auto;
+            max-width: 100%;
+            margin: 0;
             background: white;
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-            overflow: hidden;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
         }
 
         .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 30px;
-            text-align: center;
-            position: relative;
+            background: #ffffff;
+            color: #1a1a1a;
+            padding: 20px 40px;
+            border-bottom: 3px solid #31b0d4;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
         }
 
-        .header h1 {
-            font-size: 32px;
-            margin-bottom: 10px;
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 20px;
         }
 
-        .header p {
-            opacity: 0.9;
-            font-size: 16px;
+        .logo-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .logo-container img {
+            height: 50px;
+            width: auto;
+        }
+
+        .brand-text {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .brand-name {
+            font-size: 24px;
+            font-weight: 700;
+            color: #1a1a1a;
+            letter-spacing: -0.5px;
+        }
+
+        .brand-tagline {
+            font-size: 12px;
+            color: #31b0d4;
+            font-weight: 600;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 20px;
         }
 
         .manage-link {
-            position: absolute;
-            top: 30px;
-            left: 30px;
             padding: 10px 20px;
-            background: rgba(255,255,255,0.2);
+            background: #31b0d4;
             color: white;
-            border: 2px solid white;
+            border: 2px solid #31b0d4;
             border-radius: 8px;
             text-decoration: none;
-            font-size: 16px;
+            font-size: 14px;
+            font-weight: 600;
             transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
         }
 
         .manage-link:hover {
-            background: white;
-            color: #667eea;
+            background: #1a8fb0;
+            border-color: #1a8fb0;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(49, 176, 212, 0.3);
         }
 
         .settings-icon {
-            position: absolute;
-            top: 30px;
-            right: 30px;
-            font-size: 28px;
+            font-size: 24px;
             cursor: pointer;
             transition: transform 0.3s;
+            color: #31b0d4;
         }
 
         .settings-icon:hover {
             transform: rotate(90deg);
+            color: #1a8fb0;
         }
 
         .main-content {
@@ -98,14 +137,14 @@
 
         .manage-docs-btn {
             padding: 12px 24px;
-            background: #764ba2;
+            background: #31b0d4;
             color: white;
             border: none;
             border-radius: 8px;
             cursor: pointer;
             font-size: 16px;
             font-weight: 600;
-            transition: background 0.3s;
+            transition: all 0.3s;
             text-decoration: none;
             display: inline-flex;
             align-items: center;
@@ -113,7 +152,9 @@
         }
 
         .manage-docs-btn:hover {
-            background: #663a8f;
+            background: #1a8fb0;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(49, 176, 212, 0.3);
         }
 
         .doc-count-badge {
@@ -124,7 +165,7 @@
         }
 
         .chat-messages {
-            border: 2px dashed #667eea;
+            border: 2px dashed #31b0d4;
             border-radius: 12px;
             padding: 30px;
             text-align: center;
@@ -136,7 +177,7 @@
 
         .drop-zone.drag-over {
             background: #e3f2fd;
-            border-color: #764ba2;
+            border-color: #31b0d4;
         }
 
         .drop-zone:hover {
@@ -168,7 +209,7 @@
         .file-input-label {
             display: block;
             padding: 12px 20px;
-            background: #667eea;
+            background: #31b0d4;
             color: white;
             text-align: center;
             border-radius: 8px;
@@ -177,13 +218,13 @@
         }
 
         .file-input-label:hover {
-            background: #5568d3;
+            background: #1a8fb0;
         }
 
         .upload-btn {
             width: 100%;
             padding: 12px;
-            background: #764ba2;
+            background: #31b0d4;
             color: white;
             border: none;
             border-radius: 8px;
@@ -194,7 +235,7 @@
         }
 
         .upload-btn:hover {
-            background: #663a8f;
+            background: #1a8fb0;
         }
 
         .upload-btn:disabled {
@@ -245,7 +286,7 @@
 
         .progress-fill {
             height: 100%;
-            background: linear-gradient(90deg, #667eea, #764ba2);
+            background: linear-gradient(90deg, #31b0d4, #31b0d4);
             width: 0%;
             transition: width 0.3s;
             display: flex;
@@ -290,7 +331,7 @@
 
         .search-box:focus {
             outline: none;
-            border-color: #667eea;
+            border-color: #31b0d4;
         }
 
         .sort-select {
@@ -303,7 +344,7 @@
 
         .sort-select:focus {
             outline: none;
-            border-color: #667eea;
+            border-color: #31b0d4;
         }
 
         .bulk-actions {
@@ -322,12 +363,12 @@
         }
 
         .select-all-btn {
-            background: #667eea;
+            background: #31b0d4;
             color: white;
         }
 
         .select-all-btn:hover {
-            background: #5568d3;
+            background: #1a8fb0;
         }
 
         .delete-selected-btn {
@@ -360,7 +401,7 @@
 
         .document-item.selected {
             background: #e3f2fd;
-            border-color: #667eea;
+            border-color: #31b0d4;
         }
 
         .document-item-header {
@@ -406,12 +447,12 @@
         }
 
         .view-btn {
-            background: #667eea;
+            background: #31b0d4;
             color: white;
         }
 
         .view-btn:hover {
-            background: #5568d3;
+            background: #1a8fb0;
         }
 
         .download-btn {
@@ -477,7 +518,7 @@
         .new-chat-btn {
             width: 100%;
             padding: 10px;
-            background: #667eea;
+            background: #31b0d4;
             color: white;
             border: none;
             border-radius: 8px;
@@ -488,7 +529,7 @@
         }
 
         .new-chat-btn:hover {
-            background: #5568d3;
+            background: #1a8fb0;
         }
 
         .conversations-list {
@@ -513,7 +554,7 @@
 
         .conversation-item.active {
             background: #e3f2fd;
-            border-color: #667eea;
+            border-color: #31b0d4;
         }
 
         .conversation-title {
@@ -581,7 +622,7 @@
 
         .conversation-settings .change-settings-btn {
             padding: 6px 12px;
-            background: #667eea;
+            background: #31b0d4;
             color: white;
             border: none;
             border-radius: 4px;
@@ -590,7 +631,7 @@
         }
 
         .conversation-settings .change-settings-btn:hover {
-            background: #5568d3;
+            background: #1a8fb0;
         }
 
         .chat-messages {
@@ -625,7 +666,7 @@
         }
 
         .message.user .message-content {
-            background: #667eea;
+            background: #31b0d4;
             color: white;
         }
 
@@ -658,7 +699,7 @@
 
         .source-doc {
             font-weight: 600;
-            color: #667eea;
+            color: #31b0d4;
         }
 
         .chat-input-container {
@@ -678,12 +719,12 @@
 
         .chat-input:focus {
             outline: none;
-            border-color: #667eea;
+            border-color: #31b0d4;
         }
 
         .send-btn {
             padding: 15px 30px;
-            background: #667eea;
+            background: #31b0d4;
             color: white;
             border: none;
             border-radius: 12px;
@@ -693,7 +734,7 @@
         }
 
         .send-btn:hover {
-            background: #5568d3;
+            background: #1a8fb0;
         }
 
         .send-btn:disabled {
@@ -726,7 +767,7 @@
         .loading {
             text-align: center;
             padding: 20px;
-            color: #667eea;
+            color: #31b0d4;
         }
 
         .error {
@@ -828,7 +869,7 @@
         .form-group select:focus,
         .form-group input[type="text"]:focus {
             outline: none;
-            border-color: #667eea;
+            border-color: #31b0d4;
         }
 
         .radio-group {
@@ -849,7 +890,7 @@
         }
 
         .btn-primary {
-            background: #667eea;
+            background: #31b0d4;
             color: white;
             padding: 12px 24px;
             border: none;
@@ -857,33 +898,43 @@
             cursor: pointer;
             font-size: 16px;
             margin-right: 10px;
+            font-weight: 600;
+            transition: all 0.3s;
         }
 
         .btn-primary:hover {
-            background: #5568d3;
+            background: #1a8fb0;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(49, 176, 212, 0.3);
         }
 
         .btn-primary:disabled {
             background: #ccc;
             cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
         }
 
         .btn-secondary {
-            background: #6c757d;
-            color: white;
+            background: #ffffff;
+            color: #1a1a1a;
             padding: 12px 24px;
-            border: none;
+            border: 2px solid #e0e0e0;
             border-radius: 8px;
             cursor: pointer;
             font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s;
         }
 
         .btn-secondary:hover {
-            background: #5a6268;
+            background: #f8f9fa;
+            border-color: #31b0d4;
+            color: #31b0d4;
         }
 
         .btn-test {
-            background: #28a745;
+            background: #31b0d4;
             color: white;
             padding: 8px 16px;
             border: none;
@@ -891,10 +942,13 @@
             cursor: pointer;
             font-size: 14px;
             margin-left: 10px;
+            font-weight: 600;
+            transition: all 0.3s;
         }
 
         .btn-test:hover {
-            background: #218838;
+            background: #1a8fb0;
+            transform: translateY(-1px);
         }
 
         .test-result {
@@ -959,7 +1013,7 @@
 
         .chunk-header {
             font-weight: 600;
-            color: #667eea;
+            color: #31b0d4;
             margin-bottom: 8px;
         }
 
@@ -993,17 +1047,100 @@
         .stat-value {
             font-size: 24px;
             font-weight: bold;
-            color: #667eea;
+            color: #31b0d4;
+        }
+
+        /* Footer Styles */
+        .footer {
+            background: #1a1a1a;
+            color: #ffffff;
+            padding: 40px 60px;
+            margin-top: auto;
+        }
+
+        .footer-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 30px;
+        }
+
+        .footer-left {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .footer-logo {
+            height: 40px;
+            width: auto;
+        }
+
+        .footer-brand {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .footer-brand-name {
+            font-size: 20px;
+            font-weight: 700;
+            color: #ffffff;
+        }
+
+        .footer-subtitle {
+            font-size: 12px;
+            color: #31b0d4;
+            font-weight: 600;
+            letter-spacing: 1px;
+        }
+
+        .footer-links {
+            display: flex;
+            gap: 30px;
+            align-items: center;
+        }
+
+        .footer-link {
+            color: #99e8ff;
+            text-decoration: none;
+            font-size: 14px;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .footer-link:hover {
+            color: #31b0d4;
+            transform: translateY(-2px);
+        }
+
+        .footer-divider {
+            width: 1px;
+            height: 20px;
+            background: #444;
         }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <a href="/manage" class="manage-link">📚 Manage KB</a>
-            <div class="settings-icon" onclick="openSettingsModal()">⚙️</div>
-            <h1>🧠 Personal Knowledge Base</h1>
-            <p>Upload your documents and have intelligent conversations with your knowledge</p>
+            <div class="header-left">
+                <div class="logo-container">
+                    <img src="/static/logo.png" alt="AI Classroom Logo" onerror="this.style.display='none'">
+                    <div class="brand-text">
+                        <div class="brand-name">AI Classroom</div>
+                        <div class="brand-tagline">Build. Break. Scale.</div>
+                    </div>
+                </div>
+            </div>
+            <div class="header-right">
+                <a href="/manage" class="manage-link">📚 Manage KB</a>
+                <div class="settings-icon" onclick="openSettingsModal()">⚙️</div>
+            </div>
         </div>
 
         <div class="main-content">
@@ -1058,6 +1195,32 @@
                         ></textarea>
                         <button id="sendBtn" class="send-btn">Send</button>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <div class="footer-content">
+                <div class="footer-left">
+                    <img src="/static/logo.png" alt="AI Classroom" class="footer-logo" onerror="this.style.display='none'">
+                    <div class="footer-brand">
+                        <div class="footer-brand-name">AI Classroom</div>
+                        <div class="footer-subtitle">Production AI Engineering</div>
+                    </div>
+                </div>
+                <div class="footer-links">
+                    <a href="https://github.com/aishitdharwal/personal-knowledge-base-rag/blob/main/README.md" target="_blank" class="footer-link">
+                        📖 Documentation
+                    </a>
+                    <div class="footer-divider"></div>
+                    <a href="https://github.com/aishitdharwal/personal-knowledge-base-rag" target="_blank" class="footer-link">
+                        💻 GitHub
+                    </a>
+                    <div class="footer-divider"></div>
+                    <a href="mailto:aishit.dharwal@figuringoutaishit.com" class="footer-link">
+                        ✉️ Contact
+                    </a>
                 </div>
             </div>
         </div>
